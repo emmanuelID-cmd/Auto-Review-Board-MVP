@@ -1,22 +1,43 @@
 # E-Commerce Product Insights Reporter
 
-## Problem Statement
+A browser-based MVP that transforms e-commerce product CSV data into readable, exportable category reports.
 
-E-Commerce Analysts spend a significant amount of time manually reviewing product data, customer reviews, and sales metrics to create reports for their teams. This repetitive process reduces the time available to identify trends, make recommendations, and support business decisions.
+## Features
 
-## Solution Design
+- Select or drag and drop a CSV file.
+- Validate required columns and skip incomplete rows safely.
+- Calculate overall and category-level performance metrics.
+- Identify basic praise and complaint themes from customer reviews.
+- Generate a plain-language summary for every category.
+- Download the report as text or CSV, or print it as a PDF.
+- Keep uploaded data in the browser without permanent storage.
 
-The E-Commerce Product Insights Reporter automates the analysis of product performance by processing sales data, customer ratings, and written reviews. The application generates concise category summaries and product insights that can be exported as professional reports, allowing analysts to focus on decision-making rather than manual reporting.
+## Run Locally
 
-## Minimum Viable Product (MVP)
+Open `index.html` in a browser. For the most reliable local experience, serve the directory with a basic web server:
 
-The MVP focuses on the core workflow:
+```bash
+python3 -m http.server 8000
+```
 
-1. Import product and review data.
-2. Analyze product ratings, sales metrics, and customer reviews.
-3. Generate an automated summary for each product category.
-4. Export the summary as a report.
+Then visit `http://localhost:8000`.
 
-## Product Description
+## CSV Format
 
-The E-Commerce Product Insights Reporter is a reporting automation tool designed for E-Commerce Analysts. It transforms raw product data into clear, actionable summaries by automatically analyzing customer reviews, ratings, and sales performance. Instead of manually reviewing spreadsheets and compiling reports, analysts receive ready-to-share insights that help merchandising and marketing teams make faster, data-driven decisions.
+The CSV must include these columns. Capitalization and extra spaces in column names are ignored.
+
+- Product Name
+- Category
+- Actual Price
+- Discounted Price
+- Discount Percentage
+- Sales
+- Rating
+- Rating Count
+- Customer Review
+
+Use `sample-products.csv` to try the complete workflow.
+
+## MVP Scope
+
+This version processes files locally and does not include accounts, database storage, live e-commerce integrations, predictive analytics, or external AI services.
