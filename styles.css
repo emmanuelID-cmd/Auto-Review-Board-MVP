@@ -502,6 +502,13 @@ h3 {
   margin: 8px 0 0;
 }
 
+.report-generated-at {
+  margin-bottom: 14px;
+  color: var(--green-700);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

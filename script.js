@@ -61,6 +61,7 @@ const elements = {
   loading: document.querySelector("#loading"),
   results: document.querySelector("#results"),
   importNote: document.querySelector("#import-note"),
+  reportGeneratedAt: document.querySelector("#report-generated-at"),
   overallMetrics: document.querySelector("#overall-metrics"),
   categoryCount: document.querySelector("#category-count"),
   categoryList: document.querySelector("#category-list"),
@@ -187,6 +188,7 @@ function resetApplication() {
   elements.uploadedDataRange.textContent = "";
   elements.uploadedDataSummary.textContent = "View imported data";
   elements.uploadedDataDetails.open = false;
+  elements.reportGeneratedAt.textContent = "";
   document.querySelector("#upload-title").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -617,6 +619,7 @@ function renderReport(report) {
     ? ` ${report.skippedRows.toLocaleString()} incomplete row${report.skippedRows === 1 ? " was" : "s were"} skipped.`
     : "";
   elements.importNote.textContent = `${report.importedRecords.toLocaleString()} records imported from ${report.fileName}.${skippedText}`;
+  elements.reportGeneratedAt.textContent = `Summary built: ${formatGeneratedTimestamp(report.generatedAt)}`;
   elements.categoryCount.textContent = `${report.categoryCount} categor${report.categoryCount === 1 ? "y" : "ies"}`;
 
   const overallMetrics = [
@@ -716,6 +719,13 @@ function formatDataValue(value) {
     return "Not available";
   }
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function formatGeneratedTimestamp(date) {
+  return date.toLocaleString([], {
+    dateStyle: "full",
+    timeStyle: "medium",
+  });
 }
 
 function createCategoryCard(category) {
