@@ -74,9 +74,9 @@
           <div class="summary-filter-grid start-row">
             <div class="field-group">
               <label for="start-date">Start Date</label>
-              <input id="start-date" type="date" aria-describedby="start-date-help start-date-error" />
+              <input id="start-date" type="date" placeholder="dd/mm/yyyy" aria-describedby="start-date-help start-date-error" />
               <div class="input-meta">
-                <span id="start-date-help" class="input-help">MM/DD/YYYY</span>
+                <span id="start-date-help" class="input-help">dd/mm/yyyy</span>
                 <span id="start-date-error" class="field-error" aria-live="polite"></span>
               </div>
             </div>
@@ -93,9 +93,9 @@
           <div class="summary-filter-grid end-row">
             <div class="field-group">
               <label for="end-date">End Date</label>
-              <input id="end-date" type="date" aria-describedby="end-date-help end-date-error" />
+              <input id="end-date" type="date" placeholder="dd/mm/yyyy" aria-describedby="end-date-help end-date-error" />
               <div class="input-meta">
-                <span id="end-date-help" class="input-help">MM/DD/YYYY</span>
+                <span id="end-date-help" class="input-help">dd/mm/yyyy</span>
                 <span id="end-date-error" class="field-error" aria-live="polite"></span>
               </div>
             </div>
@@ -116,9 +116,6 @@
             </div>
           </div>
 
-          <button class="primary-button" id="generate-summary-button" type="button" disabled>
-            Generate Summary
-          </button>
           <p class="summary-message" id="summary-message" aria-live="polite"></p>
         </section>
 

@@ -69,7 +69,6 @@ const elements = {
   endDate: document.querySelector("#end-date"),
   endTime: document.querySelector("#end-time"),
   presentCheckbox: document.querySelector("#present-checkbox"),
-  generateSummaryButton: document.querySelector("#generate-summary-button"),
   summaryMessage: document.querySelector("#summary-message"),
   startDateError: document.querySelector("#start-date-error"),
   startTimeError: document.querySelector("#start-time-error"),
@@ -98,7 +97,6 @@ elements.endDate.addEventListener("blur", () => markTouched("endDate"));
 elements.endTime.addEventListener("input", handleFilterInput);
 elements.endTime.addEventListener("blur", () => markTouched("endTime"));
 elements.presentCheckbox.addEventListener("change", handlePresentToggle);
-elements.generateSummaryButton.addEventListener("click", handleGenerateSummary);
 
 elements.fileInput.addEventListener("change", (event) => {
   handleFile(event.target.files[0]);
@@ -139,7 +137,7 @@ function handleFile(file) {
     return;
   }
 
-  if (!file.name.toLowerCase().endsWith(".csv")) {
+  if (!isAcceptedFile(file)) {
     clearSelection();
     showMessage("Please choose a CSV file. Other file types are not supported.", "error");
     return;
@@ -163,6 +161,11 @@ function clearSelection() {
   elements.fileInput.value = "";
   elements.fileRow.hidden = true;
   elements.analyzeButton.disabled = true;
+}
+
+function isAcceptedFile(file) {
+  const acceptedMimeTypes = new Set(["text/csv", "application/csv", "application/vnd.ms-excel"]);
+  return file.name.toLowerCase().endsWith(".csv") || acceptedMimeTypes.has(file.type.toLowerCase());
 }
 
 function resetApplication() {
@@ -225,29 +228,6 @@ function handlePresentToggle() {
   validateRange();
 }
 
-function handleGenerateSummary() {
-  const result = validateRange(true);
-  if (!result.valid) {
-    elements.summaryMessage.textContent = "Fix the highlighted range before generating a summary.";
-    elements.summaryMessage.classList.remove("success");
-    elements.summaryMessage.classList.add("error");
-    return;
-  }
-
-  const start = result.start;
-  const end = elements.presentCheckbox.checked ? new Date() : result.end;
-
-  if (elements.presentCheckbox.checked) {
-    const now = new Date();
-    elements.endDate.value = formatDateForInput(now);
-    elements.endTime.value = formatTimeForInput(now);
-  }
-
-  elements.summaryMessage.textContent = `Summary generated for ${formatFriendlyDateTime(start)} through ${formatFriendlyDateTime(end)}.`;
-  elements.summaryMessage.classList.remove("error");
-  elements.summaryMessage.classList.add("success");
-}
-
 function initializeDateConstraints() {
   const today = new Date();
   const maxDate = formatDateForInput(today);
@@ -281,8 +261,10 @@ function isValidTimeInput(value) {
 }
 
 function setFieldError(fieldElement, errorElement, message, show) {
-  fieldElement.setAttribute("aria-invalid", message ? "true" : "false");
-  errorElement.textContent = show && message ? message : "";
+  const hasValue = fieldElement.value.trim() !== "";
+  const showError = show && message && hasValue;
+  fieldElement.setAttribute("aria-invalid", showError ? "true" : "false");
+  errorElement.textContent = showError ? message : "";
 }
 
 function validateRange(submitAttempt = false) {
@@ -356,7 +338,6 @@ function validateRange(submitAttempt = false) {
 
   const isRangeFilled = values.startDate && values.startTime && (presentCheckbox.checked || (values.endDate && values.endTime));
   const valid = isRangeFilled && Object.keys(errors).length === 0;
-  elements.generateSummaryButton.disabled = !valid;
 
   return {
     valid,
@@ -365,16 +346,6 @@ function validateRange(submitAttempt = false) {
     end: endDateTime,
     now,
   };
-}
-
-function formatFriendlyDateTime(date) {
-  return date.toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function parseCsv(text) {
