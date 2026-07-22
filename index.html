@@ -12,7 +12,7 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="Product Insights Reporter home">
+      <a class="brand" href="#top" aria-label="Product Insights Reporter Home">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" role="img">
             <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" />
@@ -26,7 +26,7 @@
     <main id="top">
       <section class="hero" aria-labelledby="page-title">
         <p class="eyebrow">E-commerce reporting, simplified</p>
-        <h1 id="page-title">Turn product data into decisions.</h1>
+        <h1 id="page-title">Turn Product Data into Decisions.</h1>
         <p class="hero-copy">
           Import a CSV to calculate performance metrics, uncover customer feedback themes,
           and create a report your team can use.
@@ -37,9 +37,9 @@
         <div class="section-heading">
           <div>
             <p class="step-label">Step 1</p>
-            <h2 id="upload-title">Import product data</h2>
+            <h2 id="upload-title">Import Product Data</h2>
           </div>
-          <a class="text-link" href="sample-products.csv" download>Download sample CSV</a>
+          <a class="text-link" href="sample-products.csv" download>Download Sample CSV</a>
         </div>
 
         <label class="drop-zone" id="drop-zone" for="csv-file">
@@ -62,10 +62,70 @@
           <button class="icon-button" id="remove-file" type="button" aria-label="Remove selected file">×</button>
         </div>
 
+        <section class="summary-filter-panel" aria-labelledby="summary-filter-title">
+          <div class="section-heading">
+            <div>
+              <p class="step-label">Step 1.5</p>
+              <h2 id="summary-filter-title">Date and Time Range</h2>
+              <p class="section-copy">Choose a valid start and end range before generating a summary.</p>
+            </div>
+          </div>
+
+          <div class="summary-filter-grid start-row">
+            <div class="field-group">
+              <label for="start-date">Start Date</label>
+              <input id="start-date" type="date" aria-describedby="start-date-help start-date-error" />
+              <div class="input-meta">
+                <span id="start-date-help" class="input-help">MM/DD/YYYY</span>
+                <span id="start-date-error" class="field-error" aria-live="polite"></span>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="start-time">Start Time</label>
+              <input id="start-time" type="time" step="60" aria-describedby="start-time-error" />
+              <div class="input-meta">
+                <span id="start-time-error" class="field-error" aria-live="polite"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="summary-filter-grid end-row">
+            <div class="field-group">
+              <label for="end-date">End Date</label>
+              <input id="end-date" type="date" aria-describedby="end-date-help end-date-error" />
+              <div class="input-meta">
+                <span id="end-date-help" class="input-help">MM/DD/YYYY</span>
+                <span id="end-date-error" class="field-error" aria-live="polite"></span>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="end-time">End Time</label>
+              <input id="end-time" type="time" step="60" aria-describedby="end-time-error" />
+              <div class="input-meta">
+                <span id="end-time-error" class="field-error" aria-live="polite"></span>
+              </div>
+            </div>
+
+            <div class="field-group checkbox-group">
+              <label class="checkbox-label" for="present-checkbox">
+                <input id="present-checkbox" type="checkbox" />
+                Present
+              </label>
+            </div>
+          </div>
+
+          <button class="primary-button" id="generate-summary-button" type="button" disabled>
+            Generate Summary
+          </button>
+          <p class="summary-message" id="summary-message" aria-live="polite"></p>
+        </section>
+
         <div class="message" id="message" role="alert" aria-live="polite" hidden></div>
 
         <button class="primary-button" id="analyze-button" type="button" disabled>
-          Analyze product data
+          Analyze Product Data
         </button>
 
         <div class="loading" id="loading" role="status" aria-live="polite" hidden>
@@ -74,7 +134,7 @@
         </div>
 
         <details class="column-guide">
-          <summary>View required CSV columns</summary>
+          <summary>View Required CSV Columns</summary>
           <p>
             Product Name, Category, Actual Price, Discounted Price, Discount Percentage,
             Sales, Rating, Rating Count, and Customer Review.
@@ -86,21 +146,21 @@
         <div class="results-header">
           <div>
             <p class="step-label">Step 2</p>
-            <h2 id="results-title">Your product insights</h2>
+            <h2 id="results-title">Your Product Insights</h2>
             <p id="import-note" class="section-copy"></p>
           </div>
           <button class="secondary-button" id="clear-button" type="button">Upload new file</button>
         </div>
 
         <section aria-labelledby="overall-title">
-          <h3 id="overall-title">Overall summary</h3>
+          <h3 id="overall-title">Overall Summary</h3>
           <div class="metric-grid" id="overall-metrics"></div>
         </section>
 
         <section class="category-section" aria-labelledby="categories-title">
           <div class="section-heading category-heading">
             <div>
-              <h3 id="categories-title">Category reports</h3>
+              <h3 id="categories-title">Category Reports</h3>
               <p class="section-copy">A clear view of performance and customer feedback by category.</p>
             </div>
             <span class="category-count" id="category-count"></span>
@@ -111,13 +171,13 @@
         <section class="export-panel" aria-labelledby="export-title">
           <div>
             <p class="step-label">Step 3</p>
-            <h3 id="export-title">Share your report</h3>
+            <h3 id="export-title">Share Your Report</h3>
             <p class="section-copy">Download the full analysis or print it as a PDF.</p>
           </div>
           <div class="export-actions">
             <button class="secondary-button" id="export-text" type="button">Download text</button>
             <button class="secondary-button" id="export-csv" type="button">Download CSV</button>
-            <button class="primary-button compact" id="print-report" type="button">Print report</button>
+            <button class="primary-button compact" id="print-report" type="button">Print Report</button>
           </div>
         </section>
       </section>

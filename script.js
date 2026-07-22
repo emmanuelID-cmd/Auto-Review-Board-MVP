@@ -64,10 +64,41 @@ const elements = {
   exportText: document.querySelector("#export-text"),
   exportCsv: document.querySelector("#export-csv"),
   printReport: document.querySelector("#print-report"),
+  startDate: document.querySelector("#start-date"),
+  startTime: document.querySelector("#start-time"),
+  endDate: document.querySelector("#end-date"),
+  endTime: document.querySelector("#end-time"),
+  presentCheckbox: document.querySelector("#present-checkbox"),
+  generateSummaryButton: document.querySelector("#generate-summary-button"),
+  summaryMessage: document.querySelector("#summary-message"),
+  startDateError: document.querySelector("#start-date-error"),
+  startTimeError: document.querySelector("#start-time-error"),
+  endDateError: document.querySelector("#end-date-error"),
+  endTimeError: document.querySelector("#end-time-error"),
 };
 
 let selectedFile = null;
 let currentReport = null;
+
+const validationState = {
+  touched: {
+    startDate: false,
+    startTime: false,
+    endDate: false,
+    endTime: false,
+  },
+};
+
+elements.startDate.addEventListener("input", handleFilterInput);
+elements.startDate.addEventListener("blur", () => markTouched("startDate"));
+elements.startTime.addEventListener("input", handleFilterInput);
+elements.startTime.addEventListener("blur", () => markTouched("startTime"));
+elements.endDate.addEventListener("input", handleFilterInput);
+elements.endDate.addEventListener("blur", () => markTouched("endDate"));
+elements.endTime.addEventListener("input", handleFilterInput);
+elements.endTime.addEventListener("blur", () => markTouched("endTime"));
+elements.presentCheckbox.addEventListener("change", handlePresentToggle);
+elements.generateSummaryButton.addEventListener("click", handleGenerateSummary);
 
 elements.fileInput.addEventListener("change", (event) => {
   handleFile(event.target.files[0]);
@@ -97,6 +128,9 @@ elements.analyzeButton.addEventListener("click", analyzeSelectedFile);
 elements.exportText.addEventListener("click", exportTextReport);
 elements.exportCsv.addEventListener("click", exportCsvReport);
 elements.printReport.addEventListener("click", () => window.print());
+
+initializeDateConstraints();
+validateRange();
 
 function handleFile(file) {
   hideMessage();
@@ -165,6 +199,182 @@ async function analyzeSelectedFile() {
   } finally {
     setLoading(false);
   }
+}
+
+function handleFilterInput() {
+  validateRange();
+}
+
+function markTouched(fieldName) {
+  validationState.touched[fieldName] = true;
+  validateRange();
+}
+
+function handlePresentToggle() {
+  if (elements.presentCheckbox.checked) {
+    const now = new Date();
+    elements.endDate.value = formatDateForInput(now);
+    elements.endTime.value = formatTimeForInput(now);
+    elements.endDate.disabled = true;
+    elements.endTime.disabled = true;
+  } else {
+    elements.endDate.disabled = false;
+    elements.endTime.disabled = false;
+  }
+
+  validateRange();
+}
+
+function handleGenerateSummary() {
+  const result = validateRange(true);
+  if (!result.valid) {
+    elements.summaryMessage.textContent = "Fix the highlighted range before generating a summary.";
+    elements.summaryMessage.classList.remove("success");
+    elements.summaryMessage.classList.add("error");
+    return;
+  }
+
+  const start = result.start;
+  const end = elements.presentCheckbox.checked ? new Date() : result.end;
+
+  if (elements.presentCheckbox.checked) {
+    const now = new Date();
+    elements.endDate.value = formatDateForInput(now);
+    elements.endTime.value = formatTimeForInput(now);
+  }
+
+  elements.summaryMessage.textContent = `Summary generated for ${formatFriendlyDateTime(start)} through ${formatFriendlyDateTime(end)}.`;
+  elements.summaryMessage.classList.remove("error");
+  elements.summaryMessage.classList.add("success");
+}
+
+function initializeDateConstraints() {
+  const today = new Date();
+  const maxDate = formatDateForInput(today);
+  elements.startDate.max = maxDate;
+  elements.endDate.max = maxDate;
+}
+
+function formatDateForInput(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function formatTimeForInput(date) {
+  return date.toTimeString().slice(0, 5);
+}
+
+function parseDateTime(dateValue, timeValue) {
+  if (!dateValue || !timeValue) {
+    return null;
+  }
+
+  const parsed = new Date(`${dateValue}T${timeValue}`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isValidDateInput(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(value).getTime());
+}
+
+function isValidTimeInput(value) {
+  return /^\d{2}:\d{2}$/.test(value);
+}
+
+function setFieldError(fieldElement, errorElement, message, show) {
+  fieldElement.setAttribute("aria-invalid", message ? "true" : "false");
+  errorElement.textContent = show && message ? message : "";
+}
+
+function validateRange(submitAttempt = false) {
+  const now = new Date();
+  const { startDate, startTime, endDate, endTime, presentCheckbox } = elements;
+  const values = {
+    startDate: startDate.value.trim(),
+    startTime: startTime.value.trim(),
+    endDate: endDate.value.trim(),
+    endTime: endTime.value.trim(),
+  };
+
+  if (submitAttempt) {
+    Object.keys(validationState.touched).forEach((key) => {
+      validationState.touched[key] = true;
+    });
+  }
+
+  const errors = {};
+  const startDateTime = parseDateTime(values.startDate, values.startTime);
+  const endDateTime = presentCheckbox.checked ? now : parseDateTime(values.endDate, values.endTime);
+
+  if (!values.startDate) {
+    errors.startDate = "Enter a Start Date.";
+  } else if (!isValidDateInput(values.startDate)) {
+    errors.startDate = "Enter a valid date.";
+  }
+
+  if (!values.startTime) {
+    errors.startTime = "Enter a Start Time.";
+  } else if (!isValidTimeInput(values.startTime)) {
+    errors.startTime = "Enter a valid time.";
+  }
+
+  if (!presentCheckbox.checked) {
+    if (!values.endDate) {
+      errors.endDate = "Enter an End Date.";
+    } else if (!isValidDateInput(values.endDate)) {
+      errors.endDate = "Enter a valid date.";
+    }
+
+    if (!values.endTime) {
+      errors.endTime = "Enter an End Time.";
+    } else if (!isValidTimeInput(values.endTime)) {
+      errors.endTime = "Enter a valid time.";
+    }
+  }
+
+  if (startDateTime && startDateTime > now) {
+    errors.startTime = "Start date and time cannot be in the future.";
+  }
+
+  if (!presentCheckbox.checked && endDateTime && endDateTime > now) {
+    errors.endTime = "End date and time cannot be in the future.";
+  }
+
+  if (startDateTime && endDateTime && startDateTime > endDateTime) {
+    errors.startTime = "Start date and time cannot be later than End date and time.";
+    errors.endTime = "End date and time cannot be earlier than Start date and time.";
+  }
+
+  setFieldError(startDate, elements.startDateError, errors.startDate, validationState.touched.startDate || submitAttempt);
+  setFieldError(startTime, elements.startTimeError, errors.startTime, validationState.touched.startTime || submitAttempt);
+  setFieldError(endDate, elements.endDateError, errors.endDate, validationState.touched.endDate || submitAttempt);
+  setFieldError(endTime, elements.endTimeError, errors.endTime, validationState.touched.endTime || submitAttempt);
+
+  if (!submitAttempt) {
+    elements.summaryMessage.textContent = "";
+    elements.summaryMessage.classList.remove("success", "error");
+  }
+
+  const isRangeFilled = values.startDate && values.startTime && (presentCheckbox.checked || (values.endDate && values.endTime));
+  const valid = isRangeFilled && Object.keys(errors).length === 0;
+  elements.generateSummaryButton.disabled = !valid;
+
+  return {
+    valid,
+    errors,
+    start: startDateTime,
+    end: endDateTime,
+    now,
+  };
+}
+
+function formatFriendlyDateTime(date) {
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function parseCsv(text) {
