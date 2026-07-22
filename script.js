@@ -10,6 +10,8 @@ const REQUIRED_COLUMNS = [
   "Rating",
   "Rating Count",
   "Customer Review",
+  "Date",
+  "Time",
 ];
 
 const FIELD_KEYS = {
@@ -22,6 +24,8 @@ const FIELD_KEYS = {
   rating: "rating",
   "rating count": "ratingCount",
   "customer review": "customerReview",
+  date: "recordDate",
+  time: "recordTime",
 };
 
 const STOP_WORDS = new Set([
@@ -64,6 +68,10 @@ const elements = {
   exportText: document.querySelector("#export-text"),
   exportCsv: document.querySelector("#export-csv"),
   printReport: document.querySelector("#print-report"),
+  uploadedDataRange: document.querySelector("#uploaded-data-range"),
+  uploadedDataSummary: document.querySelector("#uploaded-data-summary"),
+  uploadedDataBody: document.querySelector("#uploaded-data-body"),
+  uploadedDataDetails: document.querySelector(".uploaded-data-details"),
   startDate: document.querySelector("#start-date"),
   startTime: document.querySelector("#start-time"),
   endDate: document.querySelector("#end-date"),
@@ -175,6 +183,10 @@ function resetApplication() {
   elements.results.hidden = true;
   elements.overallMetrics.replaceChildren();
   elements.categoryList.replaceChildren();
+  elements.uploadedDataBody.replaceChildren();
+  elements.uploadedDataRange.textContent = "";
+  elements.uploadedDataSummary.textContent = "View imported data";
+  elements.uploadedDataDetails.open = false;
   document.querySelector("#upload-title").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -427,8 +439,15 @@ function validateAndNormalizeRows(rows) {
     const getValue = (key) => (row[columnIndexes[key]] || "").trim();
     const productName = getValue("productName");
     const category = getValue("category");
+    const recordDate = getValue("recordDate");
+    const recordTime = getValue("recordTime");
 
-    if (!productName || !category) {
+    if (
+      !productName
+      || !category
+      || !isValidDateInput(recordDate)
+      || !isValidTimeInput(recordTime)
+    ) {
       skippedRows += 1;
       return;
     }
@@ -443,11 +462,13 @@ function validateAndNormalizeRows(rows) {
       rating: clampRating(parseNumber(getValue("rating"))),
       ratingCount: parseNumber(getValue("ratingCount")),
       customerReview: getValue("customerReview"),
+      recordDate,
+      recordTime,
     });
   });
 
   if (records.length === 0) {
-    throw new Error("No valid product records were found. Each row needs a Product Name and Category.");
+    throw new Error("No valid product records were found. Each row needs a Product Name, Category, Date, and Time.");
   }
 
   return { records, skippedRows };
@@ -484,6 +505,7 @@ function buildReport(records, skippedRows, fileName) {
     highestPerformingCategory: highestPerforming,
     lowestRatedCategory: lowestRated,
     categories,
+    records,
     generatedAt: new Date(),
   };
 }
@@ -618,8 +640,82 @@ function renderReport(report) {
     elements.categoryList.append(createCategoryCard(category));
   });
 
+  renderUploadedData(report);
+
   elements.results.hidden = false;
   elements.results.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderUploadedData(report) {
+  elements.uploadedDataBody.replaceChildren();
+  elements.uploadedDataDetails.open = false;
+  const { visibleRecords, rangeSummary } = filterRecordsBySelectedRange(report.records);
+  elements.uploadedDataRange.textContent = rangeSummary;
+  const recordLabel = visibleRecords.length === 1 ? "record" : "records";
+  elements.uploadedDataSummary.textContent = `View ${formatNumber(visibleRecords.length)} imported ${recordLabel}`;
+
+  visibleRecords.forEach((record) => {
+    const row = document.createElement("tr");
+    [
+      record.productName,
+      record.category,
+      record.recordDate || "Not provided",
+      record.recordTime || "Not provided",
+      formatDataValue(record.actualPrice),
+      formatDataValue(record.discountedPrice),
+      formatPercentage(record.discountPercentage),
+      formatNumber(record.sales),
+      isNumber(record.rating) ? record.rating.toFixed(1) : "Not available",
+      formatNumber(record.ratingCount),
+      record.customerReview || "Not provided",
+    ].forEach((value) => {
+      row.append(createElement("td", "", value));
+    });
+    elements.uploadedDataBody.append(row);
+  });
+}
+
+function filterRecordsBySelectedRange(records) {
+  const start = formatSelectedDateTime(elements.startDate.value, elements.startTime.value);
+  const end = elements.presentCheckbox.checked
+    ? "Present"
+    : formatSelectedDateTime(elements.endDate.value, elements.endTime.value);
+  const startDateTime = parseDateTime(elements.startDate.value, elements.startTime.value);
+  const endDateTime = elements.presentCheckbox.checked
+    ? new Date()
+    : parseDateTime(elements.endDate.value, elements.endTime.value);
+  const hasValidRange = startDateTime && endDateTime && startDateTime <= endDateTime;
+
+  if (!hasValidRange) {
+    return {
+      visibleRecords: records,
+      rangeSummary: `Selected report range: Start ${start} · End ${end}. All imported CSV records are shown.`,
+    };
+  }
+
+  const visibleRecords = records.filter((record) => {
+    const recordDateTime = parseDateTime(record.recordDate, record.recordTime);
+    return recordDateTime >= startDateTime && recordDateTime <= endDateTime;
+  });
+
+  return {
+    visibleRecords,
+    rangeSummary: `Selected report range: Start ${start} · End ${end}. Showing CSV records inside this range.`,
+  };
+}
+
+function formatSelectedDateTime(date, time) {
+  if (!date && !time) {
+    return "Not selected";
+  }
+  return `${date || "Date not selected"}${time ? ` at ${time}` : ""}`;
+}
+
+function formatDataValue(value) {
+  if (!isNumber(value)) {
+    return "Not available";
+  }
+  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
 function createCategoryCard(category) {

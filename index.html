@@ -177,6 +177,40 @@
             <button class="primary-button compact" id="print-report" type="button">Print Report</button>
           </div>
         </section>
+
+        <section class="uploaded-data-section" aria-labelledby="uploaded-data-title">
+          <div class="section-heading">
+            <div>
+              <p class="step-label">Step 4</p>
+              <h3 id="uploaded-data-title">Uploaded CSV Data</h3>
+              <p class="section-copy" id="uploaded-data-range"></p>
+            </div>
+          </div>
+
+          <details class="uploaded-data-details">
+            <summary id="uploaded-data-summary">View imported data</summary>
+            <div class="uploaded-data-table-wrap">
+              <table class="uploaded-data-table" aria-label="Uploaded CSV records">
+                <thead>
+                  <tr>
+                    <th scope="col">Product Name</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Time</th>
+                    <th scope="col">Actual Price</th>
+                    <th scope="col">Discounted Price</th>
+                    <th scope="col">Discount</th>
+                    <th scope="col">Sales</th>
+                    <th scope="col">Rating</th>
+                    <th scope="col">Rating Count</th>
+                    <th scope="col">Customer Review</th>
+                  </tr>
+                </thead>
+                <tbody id="uploaded-data-body"></tbody>
+              </table>
+            </div>
+          </details>
+        </section>
       </section>
     </main>
 

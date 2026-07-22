@@ -1,10 +1,31 @@
-Product Name,Category,Actual Price,Discounted Price,Discount Percentage,Sales,Rating,Rating Count,Customer Review
-Wireless Headphones,Electronics,99.99,79.99,20,420,4.6,318,"Excellent sound quality and comfortable fit"
-Portable Speaker,Electronics,69.99,55.99,20,275,4.2,191,"Great sound quality but poor battery life"
-Smart Watch,Electronics,149.99,119.99,20,330,3.7,256,"Easy setup and useful features but battery life is bad"
-Desk Lamp,Home Office,45.00,36.00,20,185,4.7,142,"Sturdy build quality and perfect brightness"
-Ergonomic Chair,Home Office,229.00,199.00,13,96,4.3,87,"Very comfortable and excellent build quality"
-Standing Desk,Home Office,399.00,349.00,13,72,3.6,64,"Great desk but the setup instructions are confusing"
-Running Shoes,Fitness,120.00,90.00,25,510,4.5,403,"Comfortable fit and great value"
-Yoga Mat,Fitness,50.00,35.00,30,290,3.8,221,"Good grip but poor durability and a strong smell"
-Resistance Bands,Fitness,35.00,24.50,30,340,3.4,198,"Useful set but weak material and poor durability"
+Product Name,Category,Actual Price,Discounted Price,Discount Percentage,Sales,Rating,Rating Count,Customer Review,Date,Time
+Wireless Headphones,Electronics,99.99,79.99,20,420,4.6,318,"Excellent sound quality and comfortable fit",2026-06-01,09:15
+Portable Speaker,Electronics,69.99,55.99,20,275,4.2,191,"Great sound quality but poor battery life",2026-06-03,10:30
+Smart Watch,Electronics,149.99,119.99,20,330,3.7,256,"Easy setup and useful features but battery life is bad",2026-06-05,14:00
+Bluetooth Earbuds,Electronics,89.99,71.99,20,390,4.4,287,"Excellent fit and clear calls with reliable connection",2026-06-08,11:45
+USB-C Charger,Electronics,29.99,23.99,20,510,4.1,402,"Fast charging but the cable feels weak",2026-06-12,08:20
+Tablet Stand,Electronics,39.99,31.99,20,205,3.8,176,"Useful adjustable stand but setup is confusing",2026-06-16,16:10
+Desk Lamp,Home Office,45.00,36.00,20,185,4.7,142,"Sturdy build quality and perfect brightness",2026-06-19,09:40
+Ergonomic Chair,Home Office,229.00,199.00,13,96,4.3,87,"Very comfortable and excellent build quality",2026-06-22,13:25
+Standing Desk,Home Office,399.00,349.00,13,72,3.6,64,"Great desk but the setup instructions are confusing",2026-06-25,15:50
+Keyboard Tray,Home Office,79.00,63.20,20,143,4.0,109,"Smooth sliding tray and good value",2026-06-28,10:05
+Monitor Arm,Home Office,119.00,95.20,20,118,3.5,91,"Sturdy arm but difficult adjustment process",2026-07-01,12:35
+File Organizer,Home Office,28.00,22.40,20,164,4.2,123,"Helpful organizer with good storage space",2026-07-03,17:15
+Running Shoes,Fitness,120.00,90.00,25,510,4.5,403,"Comfortable fit and great value",2026-07-05,07:55
+Yoga Mat,Fitness,50.00,35.00,30,290,3.8,221,"Good grip but poor durability and a strong smell",2026-07-06,09:10
+Resistance Bands,Fitness,35.00,24.50,30,340,3.4,198,"Useful set but weak material and poor durability",2026-07-07,18:20
+Foam Roller,Fitness,42.00,33.60,20,190,4.6,154,"Excellent firmness and easy to clean",2026-07-08,11:30
+Water Bottle,Fitness,24.00,18.00,25,460,4.1,362,"Great size but the lid leaks sometimes",2026-07-09,14:45
+Fitness Tracker,Fitness,89.00,71.20,20,238,3.7,185,"Useful tracking features but unreliable syncing",2026-07-10,16:05
+Blender,Kitchen,129.00,103.20,20,201,4.4,176,"Powerful blender with excellent smooth results",2026-07-11,08:40
+Air Fryer,Kitchen,159.00,127.20,20,174,4.5,162,"Easy to use and cooks food quickly",2026-07-12,10:20
+Coffee Maker,Kitchen,99.00,79.20,20,225,3.9,193,"Good coffee but the carafe drips",2026-07-13,12:10
+Chef Knife,Kitchen,65.00,52.00,20,284,4.7,231,"Sharp blade and comfortable handle",2026-07-14,15:30
+Food Storage Set,Kitchen,38.00,28.50,25,352,4.0,267,"Helpful containers but some lids are difficult",2026-07-15,17:50
+Electric Kettle,Kitchen,54.00,43.20,20,269,3.6,212,"Fast heating but poor durability after several uses",2026-07-16,09:05
+Hiking Backpack,Outdoors,110.00,88.00,20,198,4.5,169,"Comfortable straps and excellent storage",2026-07-17,07:30
+Camping Lantern,Outdoors,36.00,28.80,20,326,4.2,248,"Bright light but battery life is poor",2026-07-18,11:15
+Insulated Jacket,Outdoors,140.00,105.00,25,147,4.4,121,"Warm material and great fit",2026-07-19,13:40
+Trekking Poles,Outdoors,72.00,57.60,20,216,3.8,158,"Useful poles but the locks feel weak",2026-07-20,16:25
+Picnic Blanket,Outdoors,44.00,35.20,20,279,4.1,207,"Good size and easy to fold",2026-07-21,10:50
+Reusable Cooler,Outdoors,85.00,68.00,20,154,3.5,116,"Keeps drinks cold but the zipper is difficult",2026-07-21,14:10
