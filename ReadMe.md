@@ -35,6 +35,10 @@ The CSV must include these columns. Capitalization and extra spaces in column na
 - Rating
 - Rating Count
 - Customer Review
+- Date (`YYYY-MM-DD`)
+- Time (`HH:MM`)
+
+Step 4 uses the required Date and Time fields to show uploaded records within a selected date and time range.
 
 Use `sample-products.csv` to try the complete workflow.
 
