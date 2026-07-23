@@ -1,5 +1,17 @@
 "use strict";
 
+const previewTheme = new URLSearchParams(window.location.search).get("theme");
+const supportedPreviewThemes = new Set([
+  "midnight-ledger",
+  "executive-ivory",
+  "slate-glass",
+  "modern-forest",
+]);
+
+if (supportedPreviewThemes.has(previewTheme)) {
+  document.body.dataset.theme = previewTheme;
+}
+
 const REQUIRED_COLUMNS = [
   "Product Name",
   "Category",

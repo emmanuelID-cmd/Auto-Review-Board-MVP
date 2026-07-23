@@ -1,0 +1,131 @@
+/* Local visual previews only. Layout and component structure remain in styles.css. */
+
+body[data-theme="midnight-ledger"] {
+  --ink: #edf5f1;
+  --muted: #a9bab2;
+  --green-900: #1b6c4d;
+  --green-700: #62d98c;
+  --green-100: #183a2c;
+  --green-50: #15231e;
+  --amber-100: #3c3320;
+  --amber-700: #f0c76b;
+  --red-100: #44272a;
+  --red-700: #ffaaa4;
+  --line: #34463e;
+  --surface: #1c2522;
+  --background: #101614;
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+
+body[data-theme="midnight-ledger"] .drop-zone,
+body[data-theme="midnight-ledger"] .metric-card,
+body[data-theme="midnight-ledger"] .category-card-header,
+body[data-theme="midnight-ledger"] .uploaded-data-details summary {
+  background: #172b23;
+}
+
+body[data-theme="midnight-ledger"] .feedback-block.complaint {
+  background: #332820;
+}
+
+body[data-theme="midnight-ledger"] .summary-filter-panel input[type="date"]:disabled,
+body[data-theme="midnight-ledger"] .summary-filter-panel input[type="time"]:disabled {
+  background: #242d29;
+}
+
+body[data-theme="midnight-ledger"] .uploaded-data-table th {
+  background: #17211e;
+}
+
+body[data-theme="executive-ivory"] {
+  --ink: #173040;
+  --muted: #69747a;
+  --green-900: #104956;
+  --green-700: #1b6e75;
+  --green-100: #e1eeea;
+  --green-50: #f7f7f1;
+  --amber-100: #fcf0d5;
+  --amber-700: #936f28;
+  --red-100: #f9e9e5;
+  --red-700: #a8463d;
+  --line: #ddd8ca;
+  --surface: #fffefa;
+  --background: #f5f1e8;
+  --shadow: 0 16px 42px rgba(47, 55, 48, 0.08);
+}
+
+body[data-theme="executive-ivory"] h1,
+body[data-theme="executive-ivory"] h2,
+body[data-theme="executive-ivory"] h3,
+body[data-theme="executive-ivory"] h4,
+body[data-theme="executive-ivory"] .brand {
+  font-family: Iowan Old Style, Baskerville, Georgia, serif;
+}
+
+body[data-theme="executive-ivory"] .drop-zone,
+body[data-theme="executive-ivory"] .metric-card,
+body[data-theme="executive-ivory"] .category-card-header,
+body[data-theme="executive-ivory"] .uploaded-data-details summary {
+  background: #faf8f0;
+}
+
+body[data-theme="slate-glass"] {
+  --ink: #1b3153;
+  --muted: #647895;
+  --green-900: #2165c6;
+  --green-700: #347deb;
+  --green-100: #dbeaff;
+  --green-50: #f2f7ff;
+  --amber-100: #fff2d5;
+  --amber-700: #a76a0a;
+  --red-100: #fce9ec;
+  --red-700: #b84454;
+  --line: #d3e0f0;
+  --surface: rgba(255, 255, 255, 0.84);
+  --background: #eaf2fb;
+  --shadow: 0 18px 48px rgba(58, 98, 146, 0.12);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 35%),
+    linear-gradient(145deg, #eef5fc, #e5effa);
+}
+
+body[data-theme="slate-glass"] .panel,
+body[data-theme="slate-glass"] .results {
+  backdrop-filter: blur(14px);
+}
+
+body[data-theme="slate-glass"] .drop-zone,
+body[data-theme="slate-glass"] .metric-card,
+body[data-theme="slate-glass"] .category-card-header,
+body[data-theme="slate-glass"] .uploaded-data-details summary {
+  background: rgba(241, 248, 255, 0.74);
+}
+
+body[data-theme="modern-forest"] {
+  --ink: #23372c;
+  --muted: #69776c;
+  --green-900: #2e563d;
+  --green-700: #54805d;
+  --green-100: #e5eee2;
+  --green-50: #f5f5ed;
+  --amber-100: #f6ead2;
+  --amber-700: #9a6f2c;
+  --red-100: #f5e7e1;
+  --red-700: #a54e42;
+  --line: #d8ded1;
+  --surface: #fffef9;
+  --background: #f3f0e6;
+  --shadow: 0 17px 44px rgba(53, 71, 54, 0.09);
+}
+
+body[data-theme="modern-forest"] .drop-zone,
+body[data-theme="modern-forest"] .metric-card,
+body[data-theme="modern-forest"] .category-card-header,
+body[data-theme="modern-forest"] .uploaded-data-details summary {
+  background: #eef2e9;
+}
+
+body[data-theme="modern-forest"] .feedback-block.complaint {
+  background: #fbf4e8;
+}
