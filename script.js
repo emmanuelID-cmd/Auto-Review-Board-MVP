@@ -109,14 +109,16 @@ const validationState = {
   },
 };
 
-elements.startDate.addEventListener("input", handleFilterInput);
-elements.startDate.addEventListener("blur", () => markTouched("startDate"));
-elements.startTime.addEventListener("input", handleFilterInput);
-elements.startTime.addEventListener("blur", () => markTouched("startTime"));
-elements.endDate.addEventListener("input", handleFilterInput);
-elements.endDate.addEventListener("blur", () => markTouched("endDate"));
-elements.endTime.addEventListener("input", handleFilterInput);
-elements.endTime.addEventListener("blur", () => markTouched("endTime"));
+[
+  [elements.startDate, "startDate"],
+  [elements.startTime, "startTime"],
+  [elements.endDate, "endDate"],
+  [elements.endTime, "endTime"],
+].forEach(([field, fieldName]) => {
+  field.addEventListener("input", handleFilterInput);
+  field.addEventListener("change", handleFilterInput);
+  field.addEventListener("blur", () => markTouched(fieldName));
+});
 elements.presentCheckbox.addEventListener("change", handlePresentToggle);
 
 elements.fileInput.addEventListener("change", (event) => {
@@ -191,6 +193,7 @@ function isAcceptedFile(file) {
 
 function resetApplication() {
   clearSelection();
+  clearDateRange();
   hideMessage();
   currentReport = null;
   elements.results.hidden = true;
@@ -210,6 +213,12 @@ async function analyzeSelectedFile() {
     return;
   }
 
+  const dateRange = validateRange(true);
+  if (!dateRange.valid) {
+    showMessage("Enter a Start Date and Start Time, plus an End Date and End Time, or select Present for the end.", "error");
+    return;
+  }
+
   setLoading(true);
   hideMessage();
 
@@ -218,9 +227,10 @@ async function analyzeSelectedFile() {
     const contents = await selectedFile.text();
     const parsedRows = parseCsv(contents);
     const { records, skippedRows } = validateAndNormalizeRows(parsedRows);
-    currentReport = buildReport(records, skippedRows, selectedFile.name);
+    const reportRecords = filterRecordsForRange(records, dateRange);
+    currentReport = buildReport(reportRecords, skippedRows, selectedFile.name, dateRange);
     renderReport(currentReport);
-    showMessage(`${records.length.toLocaleString()} valid records imported successfully.`, "success");
+    showMessage(`${reportRecords.length.toLocaleString()} records matched the selected date and time range.`, "success");
   } catch (error) {
     currentReport = null;
     elements.results.hidden = true;
@@ -241,9 +251,8 @@ function markTouched(fieldName) {
 
 function handlePresentToggle() {
   if (elements.presentCheckbox.checked) {
-    const now = new Date();
-    elements.endDate.value = formatDateForInput(now);
-    elements.endTime.value = formatTimeForInput(now);
+    elements.endDate.value = "";
+    elements.endTime.value = "";
     elements.endDate.disabled = true;
     elements.endTime.disabled = true;
   } else {
@@ -251,6 +260,20 @@ function handlePresentToggle() {
     elements.endTime.disabled = false;
   }
 
+  validateRange();
+}
+
+function clearDateRange() {
+  elements.startDate.value = "";
+  elements.startTime.value = "";
+  elements.endDate.value = "";
+  elements.endTime.value = "";
+  elements.presentCheckbox.checked = false;
+  elements.endDate.disabled = false;
+  elements.endTime.disabled = false;
+  Object.keys(validationState.touched).forEach((key) => {
+    validationState.touched[key] = false;
+  });
   validateRange();
 }
 
@@ -263,10 +286,6 @@ function initializeDateConstraints() {
 
 function formatDateForInput(date) {
   return date.toISOString().slice(0, 10);
-}
-
-function formatTimeForInput(date) {
-  return date.toTimeString().slice(0, 5);
 }
 
 function parseDateTime(dateValue, timeValue) {
@@ -286,9 +305,9 @@ function isValidTimeInput(value) {
   return /^\d{2}:\d{2}$/.test(value);
 }
 
-function setFieldError(fieldElement, errorElement, message, show) {
+function setFieldError(fieldElement, errorElement, message, show, force = false) {
   const hasValue = fieldElement.value.trim() !== "";
-  const showError = show && message && hasValue;
+  const showError = Boolean(message) && ((show && hasValue) || force);
   fieldElement.setAttribute("aria-invalid", showError ? "true" : "false");
   errorElement.textContent = showError ? message : "";
 }
@@ -352,21 +371,22 @@ function validateRange(submitAttempt = false) {
     errors.endTime = "End date and time cannot be earlier than Start date and time.";
   }
 
-  setFieldError(startDate, elements.startDateError, errors.startDate, validationState.touched.startDate || submitAttempt);
-  setFieldError(startTime, elements.startTimeError, errors.startTime, validationState.touched.startTime || submitAttempt);
-  setFieldError(endDate, elements.endDateError, errors.endDate, validationState.touched.endDate || submitAttempt);
-  setFieldError(endTime, elements.endTimeError, errors.endTime, validationState.touched.endTime || submitAttempt);
+  setFieldError(startDate, elements.startDateError, errors.startDate, validationState.touched.startDate, submitAttempt);
+  setFieldError(startTime, elements.startTimeError, errors.startTime, validationState.touched.startTime, submitAttempt);
+  setFieldError(endDate, elements.endDateError, errors.endDate, validationState.touched.endDate, submitAttempt);
+  setFieldError(endTime, elements.endTimeError, errors.endTime, validationState.touched.endTime, submitAttempt);
 
   if (!submitAttempt) {
     elements.summaryMessage.textContent = "";
     elements.summaryMessage.classList.remove("success", "error");
   }
 
-  const isRangeFilled = values.startDate && values.startTime && (presentCheckbox.checked || (values.endDate && values.endTime));
-  const valid = isRangeFilled && Object.keys(errors).length === 0;
+  const hasRange = Boolean(startDateTime && endDateTime && startDateTime <= endDateTime);
+  const valid = hasRange && Object.keys(errors).length === 0;
 
   return {
     valid,
+    hasRange,
     errors,
     start: startDateTime,
     end: endDateTime,
@@ -488,7 +508,7 @@ function validateAndNormalizeRows(rows) {
   return { records, skippedRows };
 }
 
-function buildReport(records, skippedRows, fileName) {
+function buildReport(records, skippedRows, fileName, dateRange) {
   const groupedRecords = new Map();
 
   records.forEach((record) => {
@@ -520,6 +540,7 @@ function buildReport(records, skippedRows, fileName) {
     lowestRatedCategory: lowestRated,
     categories,
     records,
+    dateRange,
     generatedAt: new Date(),
   };
 }
@@ -630,12 +651,12 @@ function renderReport(report) {
   const skippedText = report.skippedRows > 0
     ? ` ${report.skippedRows.toLocaleString()} incomplete row${report.skippedRows === 1 ? " was" : "s were"} skipped.`
     : "";
-  elements.importNote.textContent = `${report.importedRecords.toLocaleString()} records imported from ${report.fileName}.${skippedText}`;
+  elements.importNote.textContent = `${report.importedRecords.toLocaleString()} records in the selected range from ${report.fileName}.${skippedText}`;
   elements.reportGeneratedAt.textContent = `Summary built: ${formatGeneratedTimestamp(report.generatedAt)}`;
   elements.categoryCount.textContent = `${report.categoryCount} categor${report.categoryCount === 1 ? "y" : "ies"}`;
 
   const overallMetrics = [
-    ["Imported records", formatNumber(report.importedRecords)],
+    ["Records in range", formatNumber(report.importedRecords)],
     ["Categories", formatNumber(report.categoryCount)],
     ["Average rating", formatRating(report.overallAverageRating)],
     ["Total sales", formatNumber(report.overallSales)],
@@ -664,12 +685,11 @@ function renderReport(report) {
 function renderUploadedData(report) {
   elements.uploadedDataBody.replaceChildren();
   elements.uploadedDataDetails.open = false;
-  const { visibleRecords, rangeSummary } = filterRecordsBySelectedRange(report.records);
-  elements.uploadedDataRange.textContent = rangeSummary;
-  const recordLabel = visibleRecords.length === 1 ? "record" : "records";
-  elements.uploadedDataSummary.textContent = `View ${formatNumber(visibleRecords.length)} imported ${recordLabel}`;
+  elements.uploadedDataRange.textContent = createRangeSummary(report.dateRange);
+  const recordLabel = report.records.length === 1 ? "record" : "records";
+  elements.uploadedDataSummary.textContent = `View ${formatNumber(report.records.length)} ${recordLabel} in the selected range`;
 
-  visibleRecords.forEach((record) => {
+  report.records.forEach((record) => {
     const row = document.createElement("tr");
     [
       record.productName,
@@ -690,40 +710,33 @@ function renderUploadedData(report) {
   });
 }
 
-function filterRecordsBySelectedRange(records) {
-  const start = formatSelectedDateTime(elements.startDate.value, elements.startTime.value);
-  const end = elements.presentCheckbox.checked
-    ? "Present"
-    : formatSelectedDateTime(elements.endDate.value, elements.endTime.value);
-  const startDateTime = parseDateTime(elements.startDate.value, elements.startTime.value);
-  const endDateTime = elements.presentCheckbox.checked
-    ? new Date()
-    : parseDateTime(elements.endDate.value, elements.endTime.value);
-  const hasValidRange = startDateTime && endDateTime && startDateTime <= endDateTime;
-
-  if (!hasValidRange) {
-    return {
-      visibleRecords: records,
-      rangeSummary: `Selected report range: Start ${start} · End ${end}. All imported CSV records are shown.`,
-    };
+function filterRecordsForRange(records, dateRange) {
+  if (!dateRange.hasRange) {
+    return records;
   }
 
-  const visibleRecords = records.filter((record) => {
+  return records.filter((record) => {
     const recordDateTime = parseDateTime(record.recordDate, record.recordTime);
-    return recordDateTime >= startDateTime && recordDateTime <= endDateTime;
+    return recordDateTime >= dateRange.start && recordDateTime <= dateRange.end;
   });
-
-  return {
-    visibleRecords,
-    rangeSummary: `Selected report range: Start ${start} · End ${end}. Showing CSV records inside this range.`,
-  };
 }
 
-function formatSelectedDateTime(date, time) {
-  if (!date && !time) {
-    return "Not selected";
+function createRangeSummary(dateRange) {
+  if (!dateRange.hasRange) {
+    return "A date and time range is required to generate a report.";
   }
-  return `${date || "Date not selected"}${time ? ` at ${time}` : ""}`;
+
+  return `Selected report range: Start ${formatSelectedDateTime(dateRange.start)} · End ${formatSelectedDateTime(dateRange.end)}.`;
+}
+
+function formatSelectedDateTime(date) {
+  return date.toLocaleString([], {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function formatDataValue(value) {
@@ -798,7 +811,7 @@ function exportTextReport() {
     `Source: ${report.fileName}`,
     "",
     "OVERALL SUMMARY",
-    `Imported records: ${formatNumber(report.importedRecords)}`,
+    `Records in range: ${formatNumber(report.importedRecords)}`,
     `Categories: ${formatNumber(report.categoryCount)}`,
     `Average rating: ${formatRating(report.overallAverageRating)}`,
     `Total sales: ${formatNumber(report.overallSales)}`,
