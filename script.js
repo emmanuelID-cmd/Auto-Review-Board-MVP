@@ -13,32 +13,21 @@ if (supportedPreviewThemes.has(previewTheme)) {
 }
 
 const REQUIRED_COLUMNS = [
-  "Product Name",
-  "Category",
-  "Actual Price",
-  "Discounted Price",
-  "Discount Percentage",
-  "Sales",
-  "Rating",
-  "Rating Count",
-  "Customer Review",
-  "Date",
-  "Time",
+  "Product ID", "Product Name", "Category", "Actual Price", "Discounted Price",
+  "Discount Percentage", "Rating", "Rating Count", "Customer Review",
 ];
 
-const FIELD_KEYS = {
-  "product name": "productName",
-  category: "category",
-  "actual price": "actualPrice",
-  "discounted price": "discountedPrice",
-  "discount percentage": "discountPercentage",
-  sales: "sales",
-  rating: "rating",
-  "rating count": "ratingCount",
-  "customer review": "customerReview",
-  date: "recordDate",
-  time: "recordTime",
-};
+const BOARD_FIELDS = [
+  ["Product ID", "productId", ["product id", "product_id"], "Text"],
+  ["Product Name", "productName", ["product name", "product_name"], "Text"],
+  ["Category", "category", ["category"], "Text"],
+  ["Actual Price", "actualPrice", ["actual price", "actual_price"], "Decimal/currency"],
+  ["Discounted Price", "discountedPrice", ["discounted price", "discounted_price"], "Decimal/currency"],
+  ["Discount Percentage", "discountPercentage", ["discount percentage", "discount_percentage"], "Decimal percentage"],
+  ["Rating", "rating", ["rating"], "Decimal, 0–5"],
+  ["Rating Count", "ratingCount", ["rating count", "rating_count"], "Whole number"],
+  ["Customer Review", "customerReview", ["customer review", "review content", "review_content"], "Text"],
+];
 
 const STOP_WORDS = new Set([
   "a", "an", "and", "are", "as", "at", "be", "been", "but", "by", "for", "from",
@@ -62,337 +51,73 @@ const NEGATIVE_WORDS = new Set([
 const GENERIC_SENTIMENT_WORDS = new Set([...POSITIVE_WORDS, ...NEGATIVE_WORDS]);
 
 const elements = {
-  fileInput: document.querySelector("#csv-file"),
-  dropZone: document.querySelector("#drop-zone"),
-  fileRow: document.querySelector("#file-row"),
-  fileName: document.querySelector("#file-name"),
-  fileSize: document.querySelector("#file-size"),
-  removeFile: document.querySelector("#remove-file"),
-  message: document.querySelector("#message"),
-  analyzeButton: document.querySelector("#analyze-button"),
   loading: document.querySelector("#loading"),
+  dataStatus: document.querySelector("#data-status"),
+  reloadData: document.querySelector("#reload-data"),
   results: document.querySelector("#results"),
   importNote: document.querySelector("#import-note"),
   reportGeneratedAt: document.querySelector("#report-generated-at"),
   overallMetrics: document.querySelector("#overall-metrics"),
   categoryCount: document.querySelector("#category-count"),
   categoryList: document.querySelector("#category-list"),
-  clearButton: document.querySelector("#clear-button"),
+  refreshReport: document.querySelector("#refresh-report"),
   exportText: document.querySelector("#export-text"),
   exportCsv: document.querySelector("#export-csv"),
   printReport: document.querySelector("#print-report"),
-  uploadedDataRange: document.querySelector("#uploaded-data-range"),
   uploadedDataSummary: document.querySelector("#uploaded-data-summary"),
   uploadedDataBody: document.querySelector("#uploaded-data-body"),
   uploadedDataDetails: document.querySelector(".uploaded-data-details"),
-  startDate: document.querySelector("#start-date"),
-  startTime: document.querySelector("#start-time"),
-  endDate: document.querySelector("#end-date"),
-  endTime: document.querySelector("#end-time"),
-  presentCheckbox: document.querySelector("#present-checkbox"),
-  summaryMessage: document.querySelector("#summary-message"),
-  startDateError: document.querySelector("#start-date-error"),
-  startTimeError: document.querySelector("#start-time-error"),
-  endDateError: document.querySelector("#end-date-error"),
-  endTimeError: document.querySelector("#end-time-error"),
+  dataVerificationBody: document.querySelector("#data-verification-body"),
+  parentCategoryFilter: document.querySelector("#parent-category-filter"),
+  specificCategoryFilter: document.querySelector("#specific-category-filter"),
+  productSearch: document.querySelector("#product-search"),
+  tableSortToggle: document.querySelector("#table-sort-toggle"),
 };
 
-let selectedFile = null;
 let currentReport = null;
+let tableSortDirection = "ascending";
 
-const validationState = {
-  touched: {
-    startDate: false,
-    startTime: false,
-    endDate: false,
-    endTime: false,
-  },
-};
-
-[
-  [elements.startDate, "startDate"],
-  [elements.startTime, "startTime"],
-  [elements.endDate, "endDate"],
-  [elements.endTime, "endTime"],
-].forEach(([field, fieldName]) => {
-  field.addEventListener("input", handleFilterInput);
-  field.addEventListener("change", handleFilterInput);
-  field.addEventListener("blur", () => markTouched(fieldName));
-});
-elements.presentCheckbox.addEventListener("change", handlePresentToggle);
-
-elements.fileInput.addEventListener("change", (event) => {
-  handleFile(event.target.files[0]);
-});
-
-["dragenter", "dragover"].forEach((eventName) => {
-  elements.dropZone.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    elements.dropZone.classList.add("is-dragging");
-  });
-});
-
-["dragleave", "drop"].forEach((eventName) => {
-  elements.dropZone.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    elements.dropZone.classList.remove("is-dragging");
-  });
-});
-
-elements.dropZone.addEventListener("drop", (event) => {
-  handleFile(event.dataTransfer.files[0]);
-});
-
-elements.removeFile.addEventListener("click", clearSelection);
-elements.clearButton.addEventListener("click", resetApplication);
-elements.analyzeButton.addEventListener("click", analyzeSelectedFile);
+elements.reloadData.addEventListener("click", loadDataset);
+elements.refreshReport.addEventListener("click", loadDataset);
 elements.exportText.addEventListener("click", exportTextReport);
 elements.exportCsv.addEventListener("click", exportCsvReport);
 elements.printReport.addEventListener("click", () => window.print());
+elements.parentCategoryFilter.addEventListener("change", handleParentCategoryChange);
+elements.specificCategoryFilter.addEventListener("change", renderCurrentTable);
+elements.productSearch.addEventListener("input", renderCurrentTable);
+elements.tableSortToggle.addEventListener("click", toggleTableSort);
 
-initializeDateConstraints();
-validateRange();
-
-function handleFile(file) {
-  hideMessage();
-
-  if (!file) {
-    return;
-  }
-
-  if (!isAcceptedFile(file)) {
-    clearSelection();
-    showMessage("Please choose a CSV file. Other file types are not supported.", "error");
-    return;
-  }
-
-  if (file.size === 0) {
-    clearSelection();
-    showMessage("This CSV file is empty. Add product data and try again.", "error");
-    return;
-  }
-
-  selectedFile = file;
-  elements.fileName.textContent = file.name;
-  elements.fileSize.textContent = formatFileSize(file.size);
-  elements.fileRow.hidden = false;
-  elements.analyzeButton.disabled = false;
-}
-
-function clearSelection() {
-  selectedFile = null;
-  elements.fileInput.value = "";
-  elements.fileRow.hidden = true;
-  elements.analyzeButton.disabled = true;
-}
-
-function isAcceptedFile(file) {
-  const acceptedMimeTypes = new Set(["text/csv", "application/csv", "application/vnd.ms-excel"]);
-  return file.name.toLowerCase().endsWith(".csv") || acceptedMimeTypes.has(file.type.toLowerCase());
-}
-
-function resetApplication() {
-  clearSelection();
-  clearDateRange();
-  hideMessage();
-  currentReport = null;
-  elements.results.hidden = true;
-  elements.overallMetrics.replaceChildren();
-  elements.categoryList.replaceChildren();
-  elements.uploadedDataBody.replaceChildren();
-  elements.uploadedDataRange.textContent = "";
-  elements.uploadedDataSummary.textContent = "View imported data";
-  elements.uploadedDataDetails.open = false;
-  elements.reportGeneratedAt.textContent = "";
-  document.querySelector("#upload-title").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-async function analyzeSelectedFile() {
-  if (!selectedFile) {
-    showMessage("Choose a CSV file before starting the analysis.", "error");
-    return;
-  }
-
-  const dateRange = validateRange(true);
-  if (!dateRange.valid) {
-    showMessage("Enter a Start Date and Start Time, plus an End Date and End Time, or select Present for the end.", "error");
-    return;
-  }
-
+async function loadDataset() {
   setLoading(true);
-  hideMessage();
+  setDataStatus("Loading approved Amazon product data…");
 
   try {
     await waitForPaint();
-    const contents = await selectedFile.text();
+    const response = await fetch("./Data/amazon.csv", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`The dataset could not be loaded (${response.status}).`);
+    }
+    const contents = await response.text();
     const parsedRows = parseCsv(contents);
-    const { records, skippedRows } = validateAndNormalizeRows(parsedRows);
-    const reportRecords = filterRecordsForRange(records, dateRange);
-    currentReport = buildReport(reportRecords, skippedRows, selectedFile.name, dateRange);
+    const { records, skippedRows, fieldVerification } = validateAndNormalizeRows(parsedRows);
+    currentReport = buildReport(
+      records,
+      skippedRows,
+      "amazon.csv",
+      fieldVerification,
+    );
     renderReport(currentReport);
-    showMessage(`${reportRecords.length.toLocaleString()} records matched the selected date and time range.`, "success");
+    setDataStatus(`${records.length.toLocaleString()} product records loaded from the approved dataset.`, "success");
   } catch (error) {
     currentReport = null;
     elements.results.hidden = true;
-    showMessage(error.message || "The file could not be read. Check the CSV and try again.", "error");
+    setDataStatus(error.message || "The dataset could not be loaded. Serve the site through a web server and try again.", "error");
   } finally {
     setLoading(false);
   }
 }
 
-function handleFilterInput() {
-  validateRange();
-}
-
-function markTouched(fieldName) {
-  validationState.touched[fieldName] = true;
-  validateRange();
-}
-
-function handlePresentToggle() {
-  if (elements.presentCheckbox.checked) {
-    elements.endDate.value = "";
-    elements.endTime.value = "";
-    elements.endDate.disabled = true;
-    elements.endTime.disabled = true;
-  } else {
-    elements.endDate.disabled = false;
-    elements.endTime.disabled = false;
-  }
-
-  validateRange();
-}
-
-function clearDateRange() {
-  elements.startDate.value = "";
-  elements.startTime.value = "";
-  elements.endDate.value = "";
-  elements.endTime.value = "";
-  elements.presentCheckbox.checked = false;
-  elements.endDate.disabled = false;
-  elements.endTime.disabled = false;
-  Object.keys(validationState.touched).forEach((key) => {
-    validationState.touched[key] = false;
-  });
-  validateRange();
-}
-
-function initializeDateConstraints() {
-  const today = new Date();
-  const maxDate = formatDateForInput(today);
-  elements.startDate.max = maxDate;
-  elements.endDate.max = maxDate;
-}
-
-function formatDateForInput(date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function parseDateTime(dateValue, timeValue) {
-  if (!dateValue || !timeValue) {
-    return null;
-  }
-
-  const parsed = new Date(`${dateValue}T${timeValue}`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function isValidDateInput(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(value).getTime());
-}
-
-function isValidTimeInput(value) {
-  return /^\d{2}:\d{2}$/.test(value);
-}
-
-function setFieldError(fieldElement, errorElement, message, show, force = false) {
-  const hasValue = fieldElement.value.trim() !== "";
-  const showError = Boolean(message) && ((show && hasValue) || force);
-  fieldElement.setAttribute("aria-invalid", showError ? "true" : "false");
-  errorElement.textContent = showError ? message : "";
-}
-
-function validateRange(submitAttempt = false) {
-  const now = new Date();
-  const { startDate, startTime, endDate, endTime, presentCheckbox } = elements;
-  const values = {
-    startDate: startDate.value.trim(),
-    startTime: startTime.value.trim(),
-    endDate: endDate.value.trim(),
-    endTime: endTime.value.trim(),
-  };
-
-  if (submitAttempt) {
-    Object.keys(validationState.touched).forEach((key) => {
-      validationState.touched[key] = true;
-    });
-  }
-
-  const errors = {};
-  const startDateTime = parseDateTime(values.startDate, values.startTime);
-  const endDateTime = presentCheckbox.checked ? now : parseDateTime(values.endDate, values.endTime);
-
-  if (!values.startDate) {
-    errors.startDate = "Enter a Start Date.";
-  } else if (!isValidDateInput(values.startDate)) {
-    errors.startDate = "Enter a valid date.";
-  }
-
-  if (!values.startTime) {
-    errors.startTime = "Enter a Start Time.";
-  } else if (!isValidTimeInput(values.startTime)) {
-    errors.startTime = "Enter a valid time.";
-  }
-
-  if (!presentCheckbox.checked) {
-    if (!values.endDate) {
-      errors.endDate = "Enter an End Date.";
-    } else if (!isValidDateInput(values.endDate)) {
-      errors.endDate = "Enter a valid date.";
-    }
-
-    if (!values.endTime) {
-      errors.endTime = "Enter an End Time.";
-    } else if (!isValidTimeInput(values.endTime)) {
-      errors.endTime = "Enter a valid time.";
-    }
-  }
-
-  if (startDateTime && startDateTime > now) {
-    errors.startTime = "Start date and time cannot be in the future.";
-  }
-
-  if (!presentCheckbox.checked && endDateTime && endDateTime > now) {
-    errors.endTime = "End date and time cannot be in the future.";
-  }
-
-  if (startDateTime && endDateTime && startDateTime > endDateTime) {
-    errors.startTime = "Start date and time cannot be later than End date and time.";
-    errors.endTime = "End date and time cannot be earlier than Start date and time.";
-  }
-
-  setFieldError(startDate, elements.startDateError, errors.startDate, validationState.touched.startDate, submitAttempt);
-  setFieldError(startTime, elements.startTimeError, errors.startTime, validationState.touched.startTime, submitAttempt);
-  setFieldError(endDate, elements.endDateError, errors.endDate, validationState.touched.endDate, submitAttempt);
-  setFieldError(endTime, elements.endTimeError, errors.endTime, validationState.touched.endTime, submitAttempt);
-
-  if (!submitAttempt) {
-    elements.summaryMessage.textContent = "";
-    elements.summaryMessage.classList.remove("success", "error");
-  }
-
-  const hasRange = Boolean(startDateTime && endDateTime && startDateTime <= endDateTime);
-  const valid = hasRange && Object.keys(errors).length === 0;
-
-  return {
-    valid,
-    hasRange,
-    errors,
-    start: startDateTime,
-    end: endDateTime,
-    now,
-  };
-}
+loadDataset();
 
 function parseCsv(text) {
   if (!text || !text.trim()) {
@@ -451,64 +176,88 @@ function parseCsv(text) {
 
 function validateAndNormalizeRows(rows) {
   const normalizedHeaders = rows[0].map(normalizeHeader);
-  const missingColumns = REQUIRED_COLUMNS.filter(
-    (column) => !normalizedHeaders.includes(normalizeHeader(column)),
-  );
+  const columnIndexes = new Map(normalizedHeaders.map((header, index) => [header, index]));
+  const fieldIndexes = {};
 
-  if (missingColumns.length > 0) {
-    throw new Error(`Missing required column${missingColumns.length === 1 ? "" : "s"}: ${missingColumns.join(", ")}.`);
-  }
-
-  const columnIndexes = {};
-  normalizedHeaders.forEach((header, index) => {
-    if (FIELD_KEYS[header]) {
-      columnIndexes[FIELD_KEYS[header]] = index;
-    }
+  BOARD_FIELDS.forEach(([label, key, aliases]) => {
+    fieldIndexes[key] = aliases.map((alias) => columnIndexes.get(alias)).find(Number.isInteger);
   });
+
+  const missingRequiredColumns = REQUIRED_COLUMNS.filter((column) => {
+    const field = BOARD_FIELDS.find(([label]) => label === column);
+    return !Number.isInteger(fieldIndexes[field[1]]);
+  });
+  if (missingRequiredColumns.length > 0) {
+    throw new Error(`Missing required column${missingRequiredColumns.length === 1 ? "" : "s"}: ${missingRequiredColumns.join(", ")}.`);
+  }
 
   const records = [];
   let skippedRows = 0;
+  const missingDataCounts = Object.fromEntries(BOARD_FIELDS.map(([, key]) => [key, 0]));
+  const whitespaceOnlyCounts = Object.fromEntries(BOARD_FIELDS.map(([, key]) => [key, 0]));
 
   rows.slice(1).forEach((row) => {
-    const getValue = (key) => (row[columnIndexes[key]] || "").trim();
+    const getRawValue = (key) => {
+      const index = fieldIndexes[key];
+      return Number.isInteger(index) ? (row[index] || "") : "";
+    };
+    const getValue = (key) => {
+      return getRawValue(key).trim();
+    };
     const productName = getValue("productName");
     const category = getValue("category");
-    const recordDate = getValue("recordDate");
-    const recordTime = getValue("recordTime");
 
-    if (
-      !productName
-      || !category
-      || !isValidDateInput(recordDate)
-      || !isValidTimeInput(recordTime)
-    ) {
+    BOARD_FIELDS.forEach(([, key]) => {
+      const rawValue = getRawValue(key);
+      if (!getValue(key)) {
+        missingDataCounts[key] += 1;
+        if (rawValue.length > 0) whitespaceOnlyCounts[key] += 1;
+      }
+    });
+
+    if (!productName || !category) {
       skippedRows += 1;
       return;
     }
 
     records.push({
-      productName,
-      category,
+      productId: getRawValue("productId"),
+      productName: getRawValue("productName"),
+      category: getRawValue("category"),
+      actualPriceRaw: getValue("actualPrice"),
+      discountedPriceRaw: getValue("discountedPrice"),
+      discountPercentageRaw: getValue("discountPercentage"),
+      ratingRaw: getValue("rating"),
+      ratingCountRaw: getValue("ratingCount"),
       actualPrice: parseNumber(getValue("actualPrice")),
       discountedPrice: parseNumber(getValue("discountedPrice")),
       discountPercentage: parseNumber(getValue("discountPercentage")),
-      sales: parseNumber(getValue("sales")),
       rating: clampRating(parseNumber(getValue("rating"))),
       ratingCount: parseNumber(getValue("ratingCount")),
-      customerReview: getValue("customerReview"),
-      recordDate,
-      recordTime,
+      customerReview: getRawValue("customerReview"),
     });
   });
 
   if (records.length === 0) {
-    throw new Error("No valid product records were found. Each row needs a Product Name, Category, Date, and Time.");
+    throw new Error("No valid product records were found. Each row needs a Product Name and Category.");
   }
 
-  return { records, skippedRows };
+  const fieldVerification = BOARD_FIELDS.map(([label, key, , dataType]) => {
+    const index = fieldIndexes[key];
+    return {
+      label,
+      dataType,
+      sourceHeader: Number.isInteger(index) ? rows[0][index].trim() : "Not provided",
+      exists: Number.isInteger(index),
+      missingValues: missingDataCounts[key],
+      whitespaceOnlyValues: whitespaceOnlyCounts[key],
+    };
+  });
+
+  return { records, skippedRows, fieldVerification };
 }
 
-function buildReport(records, skippedRows, fileName, dateRange) {
+function buildReport(records, skippedRows, fileName, fieldVerification) {
   const groupedRecords = new Map();
 
   records.forEach((record) => {
@@ -524,8 +273,7 @@ function buildReport(records, skippedRows, fileName, dateRange) {
     .sort((first, second) => first.name.localeCompare(second.name));
 
   const ratings = records.map((record) => record.rating).filter(isNumber);
-  const totalSales = sum(records.map((record) => record.sales));
-  const highestPerforming = [...categories].sort((a, b) => b.totalSales - a.totalSales)[0];
+  const mostReviewed = [...categories].sort((a, b) => b.totalRatingCount - a.totalRatingCount)[0];
   const ratedCategories = categories.filter((category) => isNumber(category.averageRating));
   const lowestRated = [...ratedCategories].sort((a, b) => a.averageRating - b.averageRating)[0] || null;
 
@@ -535,12 +283,11 @@ function buildReport(records, skippedRows, fileName, dateRange) {
     skippedRows,
     categoryCount: categories.length,
     overallAverageRating: average(ratings),
-    overallSales: totalSales,
-    highestPerformingCategory: highestPerforming,
+    mostReviewedCategory: mostReviewed,
     lowestRatedCategory: lowestRated,
     categories,
     records,
-    dateRange,
+    fieldVerification,
     generatedAt: new Date(),
   };
 }
@@ -557,7 +304,8 @@ function analyzeCategory(name, records) {
   const category = {
     name,
     productCount: records.length,
-    totalSales: sum(records.map((record) => record.sales)),
+    averageActualPrice: average(records.map((record) => record.actualPrice).filter(isNumber)),
+    averageDiscountedPrice: average(records.map((record) => record.discountedPrice).filter(isNumber)),
     averageRating: average(ratings),
     totalRatingCount: sum(records.map((record) => record.ratingCount)),
     averageDiscount: average(discounts),
@@ -641,7 +389,7 @@ function createCategorySummary(category) {
     ? "no recurring complaints were identified"
     : `common complaints mentioned ${category.complaints}`;
 
-  return `${category.name} has ${ratingText} across ${formatNumber(category.productCount)} products. The category generated ${formatNumber(category.totalSales)} sales and had an average discount of ${discountText}. ${praiseText}, while ${complaintText}.`;
+  return `${category.name} has ${ratingText} across ${formatNumber(category.productCount)} products and an average discount of ${discountText}. ${praiseText}, while ${complaintText}.`;
 }
 
 function renderReport(report) {
@@ -651,16 +399,16 @@ function renderReport(report) {
   const skippedText = report.skippedRows > 0
     ? ` ${report.skippedRows.toLocaleString()} incomplete row${report.skippedRows === 1 ? " was" : "s were"} skipped.`
     : "";
-  elements.importNote.textContent = `${report.importedRecords.toLocaleString()} records in the selected range from ${report.fileName}.${skippedText}`;
+  elements.importNote.textContent = `${report.importedRecords.toLocaleString()} records imported from ${report.fileName}.${skippedText} See Data Verification for the field-by-field audit.`;
   elements.reportGeneratedAt.textContent = `Summary built: ${formatGeneratedTimestamp(report.generatedAt)}`;
   elements.categoryCount.textContent = `${report.categoryCount} categor${report.categoryCount === 1 ? "y" : "ies"}`;
 
   const overallMetrics = [
-    ["Records in range", formatNumber(report.importedRecords)],
+    ["Records", formatNumber(report.importedRecords)],
     ["Categories", formatNumber(report.categoryCount)],
     ["Average rating", formatRating(report.overallAverageRating)],
-    ["Total sales", formatNumber(report.overallSales)],
-    ["Top category", report.highestPerformingCategory?.name || "Not available", true],
+    ["Total ratings", formatNumber(report.categories.reduce((total, category) => total + category.totalRatingCount, 0))],
+    ["Most reviewed", report.mostReviewedCategory?.name || "Not available", true],
     ["Lowest rated", report.lowestRatedCategory?.name || "Not available", true],
   ];
 
@@ -676,32 +424,109 @@ function renderReport(report) {
     elements.categoryList.append(createCategoryCard(category));
   });
 
+  renderDataVerification(report.fieldVerification);
   renderUploadedData(report);
 
   elements.results.hidden = false;
   elements.results.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function renderDataVerification(fieldVerification) {
+  elements.dataVerificationBody.replaceChildren();
+
+  fieldVerification.forEach((field) => {
+    const row = document.createElement("tr");
+    const availability = createElement(
+      "span",
+      `verification-status ${field.exists ? "available" : "placeholder"}`,
+      field.exists ? "Available" : "Placeholder",
+    );
+    [field.label, field.sourceHeader, field.dataType].forEach((value) => {
+      row.append(createElement("td", "", value));
+    });
+    const availabilityCell = document.createElement("td");
+    availabilityCell.append(availability);
+    row.append(
+      availabilityCell,
+      createElement("td", "", formatNumber(field.missingValues)),
+      createElement("td", "", formatNumber(field.whitespaceOnlyValues)),
+    );
+    elements.dataVerificationBody.append(row);
+  });
+}
+
 function renderUploadedData(report) {
   elements.uploadedDataBody.replaceChildren();
   elements.uploadedDataDetails.open = false;
-  elements.uploadedDataRange.textContent = createRangeSummary(report.dateRange);
   const recordLabel = report.records.length === 1 ? "record" : "records";
-  elements.uploadedDataSummary.textContent = `View ${formatNumber(report.records.length)} ${recordLabel} in the selected range`;
+  elements.uploadedDataSummary.textContent = `View ${formatNumber(report.records.length)} imported ${recordLabel}`;
 
-  report.records.forEach((record) => {
+  const selectedParent = elements.parentCategoryFilter.value;
+  const parentCategories = [...new Set(report.records.map(getParentCategory))]
+    .sort((first, second) => first.localeCompare(second));
+  elements.parentCategoryFilter.replaceChildren(new Option("All parent categories", ""));
+  parentCategories.forEach((category) => elements.parentCategoryFilter.add(new Option(category, category)));
+  elements.parentCategoryFilter.value = parentCategories.includes(selectedParent) ? selectedParent : "";
+  populateSpecificCategoryFilter(report.records, elements.parentCategoryFilter.value);
+  renderCurrentTable();
+}
+
+function handleParentCategoryChange() {
+  if (!currentReport) return;
+  populateSpecificCategoryFilter(currentReport.records, elements.parentCategoryFilter.value);
+  renderCurrentTable();
+}
+
+function populateSpecificCategoryFilter(records, parentCategory) {
+  const select = elements.specificCategoryFilter;
+  const selectedCategory = select.value;
+
+  if (!parentCategory) {
+    select.replaceChildren(new Option("Select a parent category first", ""));
+    select.disabled = true;
+    return;
+  }
+
+  const specificCategories = [...new Set(
+    records
+      .filter((record) => getParentCategory(record) === parentCategory)
+      .map((record) => record.category),
+  )].sort((first, second) => first.localeCompare(second));
+  select.replaceChildren(new Option("All specific categories", ""));
+  specificCategories.forEach((category) => select.add(new Option(category, category)));
+  select.value = specificCategories.includes(selectedCategory) ? selectedCategory : "";
+  select.disabled = false;
+}
+
+function renderCurrentTable() {
+  if (!currentReport) return;
+
+  const selectedParent = elements.parentCategoryFilter.value;
+  const selectedCategory = elements.specificCategoryFilter.value;
+  const searchTerm = elements.productSearch.value.trim().toLocaleLowerCase();
+  const records = currentReport.records
+    .filter((record) => !selectedParent || getParentCategory(record) === selectedParent)
+    .filter((record) => !selectedCategory || record.category === selectedCategory)
+    .filter((record) => !searchTerm || [record.productName, record.productId]
+      .some((value) => value.toLocaleLowerCase().includes(searchTerm)))
+    .sort((first, second) => {
+      const comparison = first.productName.localeCompare(second.productName, undefined, { sensitivity: "base" });
+      return tableSortDirection === "ascending" ? comparison : -comparison;
+    });
+
+  elements.uploadedDataBody.replaceChildren();
+
+  records.forEach((record) => {
     const row = document.createElement("tr");
     [
+      record.productId,
       record.productName,
       record.category,
-      record.recordDate || "Not provided",
-      record.recordTime || "Not provided",
-      formatDataValue(record.actualPrice),
-      formatDataValue(record.discountedPrice),
-      formatPercentage(record.discountPercentage),
-      formatNumber(record.sales),
-      isNumber(record.rating) ? record.rating.toFixed(1) : "Not available",
-      formatNumber(record.ratingCount),
+      record.actualPriceRaw || "Not provided",
+      record.discountedPriceRaw || "Not provided",
+      record.discountPercentageRaw || "Not provided",
+      record.ratingRaw || "Not provided",
+      record.ratingCountRaw || "Not provided",
       record.customerReview || "Not provided",
     ].forEach((value) => {
       row.append(createElement("td", "", value));
@@ -710,33 +535,20 @@ function renderUploadedData(report) {
   });
 }
 
-function filterRecordsForRange(records, dateRange) {
-  if (!dateRange.hasRange) {
-    return records;
-  }
-
-  return records.filter((record) => {
-    const recordDateTime = parseDateTime(record.recordDate, record.recordTime);
-    return recordDateTime >= dateRange.start && recordDateTime <= dateRange.end;
-  });
+function getParentCategory(record) {
+  return record.category.split("|", 1)[0].trim();
 }
 
-function createRangeSummary(dateRange) {
-  if (!dateRange.hasRange) {
-    return "A date and time range is required to generate a report.";
-  }
-
-  return `Selected report range: Start ${formatSelectedDateTime(dateRange.start)} · End ${formatSelectedDateTime(dateRange.end)}.`;
+function toggleTableSort() {
+  tableSortDirection = tableSortDirection === "ascending" ? "descending" : "ascending";
+  updateTableSortButton();
+  renderCurrentTable();
 }
 
-function formatSelectedDateTime(date) {
-  return date.toLocaleString([], {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function updateTableSortButton() {
+  const isDescending = tableSortDirection === "descending";
+  elements.tableSortToggle.textContent = `Product name: ${tableSortDirection}`;
+  elements.tableSortToggle.setAttribute("aria-pressed", String(isDescending));
 }
 
 function formatDataValue(value) {
@@ -764,7 +576,8 @@ function createCategoryCard(category) {
   const body = createElement("div", "category-card-body");
   const metrics = createElement("div", "category-metrics");
   [
-    ["Total sales", formatNumber(category.totalSales)],
+    ["Average actual price", formatDataValue(category.averageActualPrice)],
+    ["Average discounted price", formatDataValue(category.averageDiscountedPrice)],
     ["Average discount", formatPercentage(category.averageDiscount)],
     ["Products", formatNumber(category.productCount)],
     ["Rating count", formatNumber(category.totalRatingCount)],
@@ -811,11 +624,10 @@ function exportTextReport() {
     `Source: ${report.fileName}`,
     "",
     "OVERALL SUMMARY",
-    `Records in range: ${formatNumber(report.importedRecords)}`,
+    `Records: ${formatNumber(report.importedRecords)}`,
     `Categories: ${formatNumber(report.categoryCount)}`,
     `Average rating: ${formatRating(report.overallAverageRating)}`,
-    `Total sales: ${formatNumber(report.overallSales)}`,
-    `Highest-performing category: ${report.highestPerformingCategory?.name || "Not available"}`,
+    `Most-reviewed category: ${report.mostReviewedCategory?.name || "Not available"}`,
     `Lowest-rated category: ${report.lowestRatedCategory?.name || "Not available"}`,
     "",
     "CATEGORY REPORTS",
@@ -826,7 +638,8 @@ function exportTextReport() {
       "",
       category.name.toUpperCase(),
       `Average rating: ${formatRating(category.averageRating)}`,
-      `Total sales: ${formatNumber(category.totalSales)}`,
+      `Average actual price: ${formatDataValue(category.averageActualPrice)}`,
+      `Average discounted price: ${formatDataValue(category.averageDiscountedPrice)}`,
       `Average discount: ${formatPercentage(category.averageDiscount)}`,
       `Product count: ${formatNumber(category.productCount)}`,
       `Common praise: ${category.praise}`,
@@ -842,14 +655,15 @@ function exportCsvReport() {
   if (!currentReport) return;
 
   const headers = [
-    "Category", "Product Count", "Total Sales", "Average Rating", "Total Rating Count",
+    "Category", "Product Count", "Average Actual Price", "Average Discounted Price", "Average Rating", "Total Rating Count",
     "Average Discount Percentage", "Highest-Rated Product", "Lowest-Rated Product",
     "Common Praise", "Common Complaints", "Summary",
   ];
   const rows = currentReport.categories.map((category) => [
     category.name,
     category.productCount,
-    category.totalSales,
+    category.averageActualPrice?.toFixed(2) || "",
+    category.averageDiscountedPrice?.toFixed(2) || "",
     category.averageRating?.toFixed(2) || "",
     category.totalRatingCount,
     category.averageDiscount?.toFixed(2) || "",
@@ -909,12 +723,6 @@ function formatPercentage(value) {
   return isNumber(value) ? `${value.toFixed(1)}%` : "Not available";
 }
 
-function formatFileSize(bytes) {
-  if (bytes < 1024) return `${bytes} bytes`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function escapeCsvValue(value) {
   const text = String(value ?? "");
   return `"${text.replace(/"/g, '""')}"`;
@@ -927,22 +735,15 @@ function createElement(tagName, className = "", text = "") {
   return element;
 }
 
-function showMessage(message, type) {
-  elements.message.textContent = message;
-  elements.message.className = `message ${type}`;
-  elements.message.hidden = false;
-}
-
-function hideMessage() {
-  elements.message.hidden = true;
-  elements.message.textContent = "";
-  elements.message.className = "message";
+function setDataStatus(message, type = "") {
+  elements.dataStatus.textContent = message;
+  elements.dataStatus.className = `summary-message ${type}`.trim();
 }
 
 function setLoading(isLoading) {
   elements.loading.hidden = !isLoading;
-  elements.analyzeButton.disabled = isLoading || !selectedFile;
-  elements.fileInput.disabled = isLoading;
+  elements.reloadData.disabled = isLoading;
+  elements.refreshReport.disabled = isLoading;
 }
 
 function waitForPaint() {

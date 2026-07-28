@@ -7,19 +7,19 @@
       name="description"
       content="Import e-commerce product data and turn it into clear, exportable category insights."
     >
-    <title>E-Commerce Product Insights Reporter</title>
+    <title>Auto-Review Board</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="theme-previews.css">
   </head>
   <body data-theme="slate-glass">
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="Product Insights Reporter Home">
+      <a class="brand" href="#top" aria-label="Auto-Review Board Home">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" role="img">
             <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" />
           </svg>
         </span>
-        <span>Product Insights Reporter</span>
+        <span>Auto-Review Board</span>
       </a>
       <span class="privacy-note">Your data stays in your browser</span>
     </header>
@@ -29,115 +29,26 @@
         <p class="eyebrow">E-commerce reporting, simplified</p>
         <h1 id="page-title">Turn Product Data into Decisions.</h1>
         <p class="hero-copy">
-          Import a CSV to calculate performance metrics, uncover customer feedback themes,
-          and create a report your team can use.
+          Explore current Amazon product data, uncover customer feedback themes, and create
+          a report your team can use.
         </p>
       </section>
 
-      <section class="panel upload-panel" aria-labelledby="upload-title">
+      <section class="panel data-source-panel" aria-labelledby="data-source-title">
         <div class="section-heading">
           <div>
-            <p class="step-label">Step 1</p>
-            <h2 id="upload-title">Import Product Data</h2>
+            <p class="step-label">Live dataset</p>
+            <h2 id="data-source-title">Amazon Product Reviews</h2>
+            <p class="section-copy">The board automatically loads the approved read-only dataset.</p>
           </div>
-          <a class="text-link" href="sample-products.csv" download>Download Sample CSV</a>
+          <button class="secondary-button compact" id="reload-data" type="button">Reload data</button>
         </div>
 
-        <label class="drop-zone" id="drop-zone" for="csv-file">
-          <input id="csv-file" type="file" accept=".csv,text/csv" hidden>
-          <span class="upload-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="img">
-              <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
-            </svg>
-          </span>
-          <span class="drop-title">Choose a CSV file or drag it here</span>
-          <span class="drop-help">CSV files only · Processed locally</span>
-        </label>
-
-        <div class="file-row" id="file-row" hidden>
-          <span class="file-icon" aria-hidden="true">CSV</span>
-          <span class="file-details">
-            <strong id="file-name"></strong>
-            <span id="file-size"></span>
-          </span>
-          <button class="icon-button" id="remove-file" type="button" aria-label="Remove selected file">×</button>
-        </div>
-
-        <section class="summary-filter-panel" aria-labelledby="summary-filter-title">
-          <div class="section-heading">
-            <div>
-              <p class="step-label">Step 1.5</p>
-              <h2 id="summary-filter-title">Date and Time Range</h2>
-              <p class="section-copy">Choose a valid start and end range before generating a summary.</p>
-            </div>
-          </div>
-
-          <div class="summary-filter-grid start-row">
-            <div class="field-group">
-              <label for="start-date">Start Date</label>
-              <input id="start-date" type="date" placeholder="dd/mm/yyyy" aria-describedby="start-date-help start-date-error" />
-              <div class="input-meta">
-                <span id="start-date-help" class="input-help">dd/mm/yyyy</span>
-                <span id="start-date-error" class="field-error" aria-live="polite"></span>
-              </div>
-            </div>
-
-            <div class="field-group">
-              <label for="start-time">Start Time</label>
-              <input id="start-time" type="time" step="60" aria-describedby="start-time-error" />
-              <div class="input-meta">
-                <span id="start-time-error" class="field-error" aria-live="polite"></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="summary-filter-grid end-row">
-            <div class="field-group">
-              <label for="end-date">End Date</label>
-              <input id="end-date" type="date" placeholder="dd/mm/yyyy" aria-describedby="end-date-help end-date-error" />
-              <div class="input-meta">
-                <span id="end-date-help" class="input-help">dd/mm/yyyy</span>
-                <span id="end-date-error" class="field-error" aria-live="polite"></span>
-              </div>
-            </div>
-
-            <div class="field-group">
-              <label for="end-time">End Time</label>
-              <input id="end-time" type="time" step="60" aria-describedby="end-time-error" />
-              <div class="input-meta">
-                <span id="end-time-error" class="field-error" aria-live="polite"></span>
-              </div>
-            </div>
-
-            <div class="field-group checkbox-group">
-              <label class="checkbox-label" for="present-checkbox">
-                <input id="present-checkbox" type="checkbox" />
-                Present
-              </label>
-            </div>
-          </div>
-
-          <p class="summary-message" id="summary-message" aria-live="polite"></p>
-        </section>
-
-        <div class="message" id="message" role="alert" aria-live="polite" hidden></div>
-
-        <button class="primary-button" id="analyze-button" type="button" disabled>
-          Analyze Product Data
-        </button>
-
-        <div class="loading" id="loading" role="status" aria-live="polite" hidden>
+        <div class="loading" id="loading" role="status" aria-live="polite">
           <span class="spinner" aria-hidden="true"></span>
-          Reading data and generating insights…
+          Loading approved product data…
         </div>
-
-        <details class="column-guide">
-          <summary>View Required CSV Columns</summary>
-          <p>
-            Product Name, Category, Actual Price, Discounted Price, Discount Percentage,
-            Sales, Rating, Rating Count, and Customer Review.
-          </p>
-        </details>
+        <p class="summary-message" id="data-status" aria-live="polite"></p>
       </section>
 
       <section class="results" id="results" aria-labelledby="results-title" hidden>
@@ -148,12 +59,36 @@
             <h2 id="results-title">Your Product Insights</h2>
             <p id="import-note" class="section-copy"></p>
           </div>
-          <button class="secondary-button" id="clear-button" type="button">Upload new file</button>
+          <button class="secondary-button" id="refresh-report" type="button">Refresh data</button>
         </div>
 
         <section aria-labelledby="overall-title">
           <h3 id="overall-title">Overall Summary</h3>
           <div class="metric-grid" id="overall-metrics"></div>
+        </section>
+
+        <section class="data-verification-section" aria-labelledby="data-verification-title">
+          <div class="section-heading">
+            <div>
+              <h3 id="data-verification-title">Data Verification</h3>
+              <p class="section-copy">Read-only audit of the 9 approved Auto-Review Board fields.</p>
+            </div>
+          </div>
+          <div class="verification-table-wrap">
+            <table class="verification-table" aria-label="Imported field verification">
+              <thead>
+                <tr>
+                  <th scope="col">Board column</th>
+                  <th scope="col">Source header used</th>
+                  <th scope="col">Data type</th>
+                  <th scope="col">Exists</th>
+                  <th scope="col">Missing / whitespace</th>
+                  <th scope="col">Whitespace-only</th>
+                </tr>
+              </thead>
+              <tbody id="data-verification-body"></tbody>
+            </table>
+          </div>
         </section>
 
         <section class="category-section" aria-labelledby="categories-title">
@@ -185,24 +120,39 @@
             <div>
               <p class="step-label">Step 4</p>
               <h3 id="uploaded-data-title">Uploaded CSV Data</h3>
-              <p class="section-copy" id="uploaded-data-range"></p>
             </div>
           </div>
 
           <details class="uploaded-data-details">
             <summary id="uploaded-data-summary">View imported data</summary>
+            <div class="table-controls" aria-label="Imported data controls">
+              <label for="parent-category-filter">Parent Category
+                <select id="parent-category-filter">
+                  <option value="">All parent categories</option>
+                </select>
+              </label>
+              <label for="specific-category-filter">Specific Category
+                <select id="specific-category-filter" disabled>
+                  <option value="">Select a parent category first</option>
+                </select>
+              </label>
+              <label for="product-search">Find a Product
+                <input id="product-search" type="search" placeholder="Product name or ID" autocomplete="off">
+              </label>
+              <button class="secondary-button compact" id="table-sort-toggle" type="button" aria-pressed="false">
+                Product name: ascending
+              </button>
+            </div>
             <div class="uploaded-data-table-wrap">
               <table class="uploaded-data-table" aria-label="Uploaded CSV records">
                 <thead>
                   <tr>
+                    <th scope="col">Product ID</th>
                     <th scope="col">Product Name</th>
                     <th scope="col">Category</th>
-                    <th scope="col">Date</th>
-                    <th scope="col">Time</th>
                     <th scope="col">Actual Price</th>
                     <th scope="col">Discounted Price</th>
-                    <th scope="col">Discount</th>
-                    <th scope="col">Sales</th>
+                    <th scope="col">Discount Percentage</th>
                     <th scope="col">Rating</th>
                     <th scope="col">Rating Count</th>
                     <th scope="col">Customer Review</th>
@@ -217,7 +167,7 @@
     </main>
 
     <footer>
-      <p>E-Commerce Product Insights Reporter · MVP</p>
+      <p>Auto-Review Board · MVP</p>
     </footer>
 
     <script src="script.js"></script>

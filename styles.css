@@ -163,7 +163,8 @@ h3 {
   box-shadow: var(--shadow);
 }
 
-.upload-panel {
+.upload-panel,
+.data-source-panel {
   max-width: 760px;
   margin: 0 auto 90px;
   padding: clamp(24px, 5vw, 42px);
@@ -698,6 +699,54 @@ h3 {
   margin-top: 48px;
 }
 
+.data-verification-section {
+  margin-top: 48px;
+}
+
+.verification-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-medium);
+}
+
+.verification-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.verification-table th,
+.verification-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.verification-table th {
+  color: var(--muted);
+  background: var(--green-50);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.verification-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.verification-status {
+  font-weight: 750;
+}
+
+.verification-status.available {
+  color: var(--green-700);
+}
+
+.verification-status.placeholder {
+  color: var(--amber-700);
+}
+
 .uploaded-data-section .section-heading {
   margin-bottom: 18px;
 }
@@ -720,6 +769,35 @@ h3 {
   background: var(--green-50);
   font-size: 0.94rem;
   font-weight: 750;
+}
+
+.table-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 14px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.table-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.table-controls select,
+.table-controls input {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .uploaded-data-table-wrap {
@@ -815,6 +893,17 @@ footer {
 
   .drop-zone {
     min-height: 205px;
+  }
+
+  .table-controls {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .table-controls label,
+  .table-controls button {
+    max-width: none;
+    width: 100%;
   }
 }
 
