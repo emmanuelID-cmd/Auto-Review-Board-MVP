@@ -809,7 +809,7 @@ h3 {
 
 .data-filter-controls {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto;
   align-items: end;
   gap: 14px;
   padding: 16px 22px;

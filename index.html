@@ -94,8 +94,11 @@
             <label for="product-search">Find a Product
               <input id="product-search" type="search" placeholder="Product name or ID" autocomplete="off">
             </label>
-            <button class="secondary-button compact" id="table-sort-toggle" type="button" aria-pressed="false">
-              Product name: ascending
+            <button class="secondary-button compact" id="table-sort-toggle" type="button" aria-pressed="true">
+              Name Ascending
+            </button>
+            <button class="secondary-button compact" id="rating-sort-toggle" type="button" aria-pressed="false">
+              Rating Ascending
             </button>
           </div>
           <section class="product-summary-section" id="product-summary-section" aria-labelledby="product-summary-title" hidden>
@@ -168,6 +171,6 @@
       <div class="review-dialog-content" id="review-dialog-content"></div>
     </dialog>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=rating-sort-fix-1"></script>
   </body>
 </html>

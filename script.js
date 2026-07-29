@@ -80,10 +80,15 @@ const elements = {
   subChildCategoryFilter: document.querySelector("#sub-child-category-filter"),
   productSearch: document.querySelector("#product-search"),
   tableSortToggle: document.querySelector("#table-sort-toggle"),
+  ratingSortToggle: document.querySelector("#rating-sort-toggle"),
 };
 
 let currentReport = null;
 let tableSortDirection = "ascending";
+let ratingSortDirection = "ascending";
+let tableSortCriterion = "name";
+let nextNameSortDirection = "ascending";
+let nextRatingSortDirection = "ascending";
 
 elements.reloadData.addEventListener("click", loadDataset);
 elements.refreshReport.addEventListener("click", loadDataset);
@@ -95,6 +100,7 @@ elements.childCategoryFilter.addEventListener("change", handleChildCategoryChang
 elements.subChildCategoryFilter.addEventListener("change", renderFilteredViews);
 elements.productSearch.addEventListener("input", renderFilteredViews);
 elements.tableSortToggle.addEventListener("click", toggleTableSort);
+elements.ratingSortToggle.addEventListener("click", toggleRatingSort);
 elements.uploadedDataBody.addEventListener("click", handleReviewAction);
 elements.closeReviewDialog.addEventListener("click", () => elements.reviewDialog.close());
 elements.reviewDialog.addEventListener("click", (event) => {
@@ -486,7 +492,7 @@ function renderSummary(report) {
     elements.overallMetrics.append(card);
   });
 
-  report.categories.forEach((category) => {
+  [...report.categories].sort(compareSummaryItems).forEach((category) => {
     elements.categoryList.append(createCategoryCard(category));
   });
 
@@ -624,7 +630,7 @@ function renderProductSummaries(records) {
       averageRating: average(productRecords.map((record) => record.rating).filter(isNumber)),
       averageRatingCount: average(productRecords.map((record) => record.ratingCount).filter(isNumber)),
     };
-  }).sort((first, second) => first.productName.localeCompare(second.productName));
+  }).sort(compareSummaryItems);
 
   const productLabel = products.length === 1 ? "product" : "products";
   elements.productMatchNote.textContent = `Products matching search: ${formatNumber(products.length)} ${productLabel}.`;
@@ -666,11 +672,7 @@ function renderProductSummaries(records) {
 function renderCurrentTable(records = getFilteredRecords()) {
   if (!currentReport) return;
 
-  const sortedRecords = [...records]
-    .sort((first, second) => {
-      const comparison = first.productName.localeCompare(second.productName, undefined, { sensitivity: "base" });
-      return tableSortDirection === "ascending" ? comparison : -comparison;
-    });
+  const sortedRecords = [...records].sort(compareSummaryItems);
 
   elements.uploadedDataBody.replaceChildren();
 
@@ -777,15 +779,55 @@ function hasActiveProductFilters() {
 }
 
 function toggleTableSort() {
-  tableSortDirection = tableSortDirection === "ascending" ? "descending" : "ascending";
+  tableSortCriterion = "name";
+  tableSortDirection = nextNameSortDirection;
+  nextNameSortDirection = nextNameSortDirection === "ascending" ? "descending" : "ascending";
   updateTableSortButton();
-  renderCurrentTable();
+  updateRatingSortButton();
+  renderFilteredViews();
 }
 
 function updateTableSortButton() {
-  const isDescending = tableSortDirection === "descending";
-  elements.tableSortToggle.textContent = `Product name: ${tableSortDirection}`;
-  elements.tableSortToggle.setAttribute("aria-pressed", String(isDescending));
+  elements.tableSortToggle.textContent = `Name ${capitalizeSortDirection(nextNameSortDirection)}`;
+  elements.tableSortToggle.setAttribute("aria-label", `Sort visible results by name ${nextNameSortDirection}`);
+  elements.tableSortToggle.setAttribute("aria-pressed", String(tableSortCriterion === "name"));
+}
+
+function toggleRatingSort() {
+  tableSortCriterion = "rating";
+  ratingSortDirection = nextRatingSortDirection;
+  nextRatingSortDirection = nextRatingSortDirection === "ascending" ? "descending" : "ascending";
+  updateRatingSortButton();
+  updateTableSortButton();
+  renderFilteredViews();
+}
+
+function updateRatingSortButton() {
+  elements.ratingSortToggle.textContent = `Rating ${capitalizeSortDirection(nextRatingSortDirection)}`;
+  elements.ratingSortToggle.setAttribute("aria-label", `Sort visible results by rating ${nextRatingSortDirection}`);
+  elements.ratingSortToggle.setAttribute("aria-pressed", String(tableSortCriterion === "rating"));
+}
+
+function capitalizeSortDirection(direction) {
+  return direction === "ascending" ? "Ascending" : "Descending";
+}
+
+function compareSummaryItems(first, second) {
+  if (tableSortCriterion === "rating") {
+    const firstRating = isNumber(first.averageRating) ? first.averageRating : first.rating;
+    const secondRating = isNumber(second.averageRating) ? second.averageRating : second.rating;
+    const normalizedFirstRating = isNumber(firstRating) ? firstRating : Number.NEGATIVE_INFINITY;
+    const normalizedSecondRating = isNumber(secondRating) ? secondRating : Number.NEGATIVE_INFINITY;
+    const comparison = normalizedFirstRating - normalizedSecondRating;
+    if (comparison !== 0) {
+      return ratingSortDirection === "ascending" ? comparison : -comparison;
+    }
+  }
+
+  const firstName = first.name || first.productName || "";
+  const secondName = second.name || second.productName || "";
+  const comparison = firstName.localeCompare(secondName, undefined, { sensitivity: "base" });
+  return tableSortCriterion === "name" && tableSortDirection === "descending" ? -comparison : comparison;
 }
 
 function formatDataValue(value) {
