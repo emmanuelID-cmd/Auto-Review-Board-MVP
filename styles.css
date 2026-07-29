@@ -576,6 +576,86 @@ h3 {
   overscroll-behavior: contain;
 }
 
+.product-summary-section {
+  margin: 26px 0;
+}
+
+.product-summary-section h4 {
+  margin-bottom: 4px;
+  font-size: 1.1rem;
+}
+
+.product-summary-list {
+  display: grid;
+  gap: 14px;
+  max-height: min(48vh, 540px);
+  overflow-y: auto;
+  padding-right: 8px;
+  overscroll-behavior: contain;
+}
+
+.product-summary-card {
+  overflow: hidden;
+  border: 1px solid var(--green-700);
+  border-radius: var(--radius-medium);
+  background: var(--surface);
+}
+
+.product-summary-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--green-50);
+}
+
+.product-summary-identity h5 {
+  margin: 6px 0 0;
+  font-size: 1rem;
+}
+
+.product-id-label,
+.product-record-count {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.product-record-count {
+  white-space: nowrap;
+}
+
+.product-summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.product-summary-metric span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.product-summary-metric strong {
+  font-size: 1rem;
+}
+
+.product-summary-empty {
+  margin: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-medium);
+  color: var(--muted);
+}
+
 .category-card {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -940,6 +1020,14 @@ footer {
     max-width: none;
     width: 100%;
   }
+
+  .product-summary-card-header {
+    flex-direction: column;
+  }
+
+  .product-summary-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 430px) {
@@ -989,6 +1077,7 @@ footer {
   }
 
   .category-list,
+  .product-summary-list,
   .uploaded-data-table-wrap {
     max-height: none;
     overflow: visible;

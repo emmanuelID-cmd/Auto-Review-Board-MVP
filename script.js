@@ -62,6 +62,9 @@ const elements = {
   overallMetrics: document.querySelector("#overall-metrics"),
   categoryCount: document.querySelector("#category-count"),
   categoryList: document.querySelector("#category-list"),
+  productSummarySection: document.querySelector("#product-summary-section"),
+  productMatchNote: document.querySelector("#product-match-note"),
+  productSummaryList: document.querySelector("#product-summary-list"),
   refreshReport: document.querySelector("#refresh-report"),
   exportText: document.querySelector("#export-text"),
   exportCsv: document.querySelector("#export-csv"),
@@ -591,7 +594,73 @@ function renderFilteredViews() {
     getSummaryDepth(),
   );
   renderSummary(filteredReport);
+  renderProductSummaries(records);
   renderCurrentTable(records);
+}
+
+function renderProductSummaries(records) {
+  const searchTerm = elements.productSearch.value.trim();
+  elements.productSummaryList.replaceChildren();
+  elements.productSummarySection.hidden = !searchTerm;
+
+  if (!searchTerm) return;
+
+  const groupedProducts = new Map();
+  records.forEach((record) => {
+    const key = record.productId.trim();
+    if (!groupedProducts.has(key)) groupedProducts.set(key, []);
+    groupedProducts.get(key).push(record);
+  });
+
+  const products = Array.from(groupedProducts.entries()).map(([productId, productRecords]) => {
+    const [firstRecord] = productRecords;
+    return {
+      productId,
+      productName: firstRecord.productName,
+      recordCount: productRecords.length,
+      averageActualPrice: average(productRecords.map((record) => record.actualPrice).filter(isNumber)),
+      averageDiscountedPrice: average(productRecords.map((record) => record.discountedPrice).filter(isNumber)),
+      averageDiscount: average(productRecords.map((record) => record.discountPercentage).filter(isNumber)),
+      averageRating: average(productRecords.map((record) => record.rating).filter(isNumber)),
+      averageRatingCount: average(productRecords.map((record) => record.ratingCount).filter(isNumber)),
+    };
+  }).sort((first, second) => first.productName.localeCompare(second.productName));
+
+  const productLabel = products.length === 1 ? "product" : "products";
+  elements.productMatchNote.textContent = `Products matching search: ${formatNumber(products.length)} ${productLabel}.`;
+
+  if (products.length === 0) {
+    elements.productSummaryList.append(createElement("p", "product-summary-empty", "No products match this search."));
+    return;
+  }
+
+  products.forEach((product) => {
+    const card = createElement("article", "product-summary-card");
+    const header = createElement("header", "product-summary-card-header");
+    const identity = createElement("div", "product-summary-identity");
+    identity.append(
+      createElement("span", "product-id-label", `Product ID: ${product.productId}`),
+      createElement("h5", "", product.productName),
+    );
+    header.append(identity, createElement("span", "product-record-count", `${formatNumber(product.recordCount)} source row${product.recordCount === 1 ? "" : "s"}`));
+
+    const metrics = createElement("div", "product-summary-metrics");
+    [
+      ["Actual price", formatDataValue(product.averageActualPrice)],
+      ["Discounted price", formatDataValue(product.averageDiscountedPrice)],
+      ["Discount", formatPercentage(product.averageDiscount)],
+      ["Rating", formatRating(product.averageRating)],
+      ["Rating count", formatAverageNumber(product.averageRatingCount)],
+      ["Review records", formatNumber(product.recordCount)],
+    ].forEach(([label, value]) => {
+      const metric = createElement("div", "product-summary-metric");
+      metric.append(createElement("span", "", label), createElement("strong", "", value));
+      metrics.append(metric);
+    });
+
+    card.append(header, metrics);
+    elements.productSummaryList.append(card);
+  });
 }
 
 function renderCurrentTable(records = getFilteredRecords()) {
