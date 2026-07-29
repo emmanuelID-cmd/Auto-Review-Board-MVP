@@ -170,6 +170,73 @@ h3 {
   padding: clamp(24px, 5vw, 42px);
 }
 
+.source-import {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.compact-drop-zone {
+  display: flex;
+  min-height: 96px;
+  padding: 18px 22px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 2px dashed #b8cbbf;
+  border-radius: var(--radius-medium);
+  background: var(--green-50);
+  text-align: center;
+  transition: 160ms ease;
+}
+
+.compact-drop-zone span,
+.source-help {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.compact-drop-zone span {
+  margin-top: 3px;
+}
+
+.compact-drop-zone:hover,
+.compact-drop-zone.is-dragging {
+  border-color: var(--green-700);
+  background: var(--green-100);
+}
+
+.google-sheet-import {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.google-sheet-import label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.google-sheet-import input {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.source-help {
+  margin: 0;
+}
+
 .summary-filter-panel {
   margin: 22px 0 18px;
   padding-top: 18px;
@@ -1013,6 +1080,14 @@ footer {
   .data-filter-controls {
     align-items: stretch;
     grid-template-columns: 1fr;
+  }
+
+  .google-sheet-import {
+    grid-template-columns: 1fr;
+  }
+
+  .google-sheet-import button {
+    width: 100%;
   }
 
   .data-filter-controls label,

@@ -39,9 +39,24 @@
           <div>
             <p class="step-label">Live dataset</p>
             <h2 id="data-source-title">Amazon Product Reviews</h2>
-            <p class="section-copy">The board automatically loads the approved read-only dataset.</p>
+            <p class="section-copy">Amazon Product Reviews load automatically. Replace them with a matching file or public Google Sheet when needed.</p>
           </div>
-          <button class="secondary-button compact" id="reload-data" type="button">Reload data</button>
+          <button class="secondary-button compact" id="reload-data" type="button">Restore Amazon data</button>
+        </div>
+
+        <div class="source-import" aria-label="Replace the current dataset">
+          <input id="dataset-file" type="file" accept=".csv,.xls,.xlsx,.ods,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet" hidden>
+          <div class="compact-drop-zone" id="dataset-drop-zone" role="button" tabindex="0" aria-controls="dataset-file">
+            <strong>Drop a matching data file here</strong>
+            <span>CSV, XLS, XLSX, or ODS · or click to browse</span>
+          </div>
+          <div class="google-sheet-import">
+            <label for="google-sheet-url">Public Google Sheet link
+              <input id="google-sheet-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/..." inputmode="url">
+            </label>
+            <button class="secondary-button compact" id="load-google-sheet" type="button">Load Google Sheet</button>
+          </div>
+          <p class="source-help">The first worksheet is used. Files stay in this browser; Google Sheets must be public or shared for anyone with the link.</p>
         </div>
 
         <div class="loading" id="loading" role="status" aria-live="polite">
@@ -122,6 +137,7 @@
           <div class="export-actions">
             <button class="secondary-button" id="export-text" type="button">Download text</button>
             <button class="secondary-button" id="export-csv" type="button">Download CSV</button>
+            <button class="secondary-button" id="export-xlsx" type="button">Export XLSX</button>
             <button class="primary-button compact" id="print-report" type="button">Print Report</button>
           </div>
         </section>
@@ -171,6 +187,7 @@
       <div class="review-dialog-content" id="review-dialog-content"></div>
     </dialog>
 
-    <script src="script.js?v=rating-sort-fix-1"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="script.js?v=source-import-2"></script>
   </body>
 </html>

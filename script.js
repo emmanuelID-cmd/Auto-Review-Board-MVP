@@ -55,6 +55,10 @@ const elements = {
   loading: document.querySelector("#loading"),
   dataStatus: document.querySelector("#data-status"),
   reloadData: document.querySelector("#reload-data"),
+  datasetFile: document.querySelector("#dataset-file"),
+  datasetDropZone: document.querySelector("#dataset-drop-zone"),
+  googleSheetUrl: document.querySelector("#google-sheet-url"),
+  loadGoogleSheet: document.querySelector("#load-google-sheet"),
   results: document.querySelector("#results"),
   importNote: document.querySelector("#import-note"),
   reportGeneratedAt: document.querySelector("#report-generated-at"),
@@ -68,6 +72,7 @@ const elements = {
   refreshReport: document.querySelector("#refresh-report"),
   exportText: document.querySelector("#export-text"),
   exportCsv: document.querySelector("#export-csv"),
+  exportXlsx: document.querySelector("#export-xlsx"),
   printReport: document.querySelector("#print-report"),
   uploadedDataSummary: document.querySelector("#uploaded-data-summary"),
   uploadedDataBody: document.querySelector("#uploaded-data-body"),
@@ -89,11 +94,32 @@ let ratingSortDirection = "ascending";
 let tableSortCriterion = "name";
 let nextNameSortDirection = "ascending";
 let nextRatingSortDirection = "ascending";
+let activeSource = { kind: "amazon" };
 
-elements.reloadData.addEventListener("click", loadDataset);
-elements.refreshReport.addEventListener("click", loadDataset);
+elements.reloadData.addEventListener("click", loadAmazonDataset);
+elements.refreshReport.addEventListener("click", refreshActiveDataset);
+elements.datasetFile.addEventListener("change", () => loadUploadedFile(elements.datasetFile.files[0]));
+elements.datasetDropZone.addEventListener("click", () => elements.datasetFile.click());
+elements.datasetDropZone.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    elements.datasetFile.click();
+  }
+});
+elements.datasetDropZone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  elements.datasetDropZone.classList.add("is-dragging");
+});
+elements.datasetDropZone.addEventListener("dragleave", () => elements.datasetDropZone.classList.remove("is-dragging"));
+elements.datasetDropZone.addEventListener("drop", (event) => {
+  event.preventDefault();
+  elements.datasetDropZone.classList.remove("is-dragging");
+  loadUploadedFile(event.dataTransfer.files[0]);
+});
+elements.loadGoogleSheet.addEventListener("click", loadGoogleSheet);
 elements.exportText.addEventListener("click", exportTextReport);
 elements.exportCsv.addEventListener("click", exportCsvReport);
+elements.exportXlsx.addEventListener("click", exportXlsxReport);
 elements.printReport.addEventListener("click", () => window.print());
 elements.parentCategoryFilter.addEventListener("change", handleParentCategoryChange);
 elements.childCategoryFilter.addEventListener("change", handleChildCategoryChange);
@@ -107,42 +133,129 @@ elements.reviewDialog.addEventListener("click", (event) => {
   if (event.target === elements.reviewDialog) elements.reviewDialog.close();
 });
 
-async function loadDataset() {
+async function loadAmazonDataset() {
   setLoading(true);
   setDataStatus("Loading approved Amazon product data…");
 
   try {
     await waitForPaint();
-    const [response, usdRate] = await Promise.all([
-      fetch("./Data/amazon.csv", { cache: "no-store" }),
-      fetchUsdRate(),
-    ]);
+    const response = await fetch("./Data/amazon.csv", { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`The dataset could not be loaded (${response.status}).`);
     }
-    const contents = await response.text();
-    const parsedRows = parseCsv(contents);
-    const { records, skippedRows, fieldVerification } = validateAndNormalizeRows(parsedRows);
-    convertPricesToUsd(records, usdRate);
-    currentReport = buildReport(
-      records,
-      skippedRows,
-      "amazon.csv",
-      fieldVerification,
-      1,
-    );
-    renderReport(currentReport);
-    setDataStatus(`${records.length.toLocaleString()} product records loaded. Prices are shown in USD.`, "success");
+    await applyRows(parseCsv(await response.text()), "amazon.csv", { kind: "amazon" });
   } catch (error) {
-    currentReport = null;
-    elements.results.hidden = true;
-    setDataStatus(error.message || "The dataset could not be loaded. Serve the site through a web server and try again.", "error");
+    handleDataLoadError(error);
   } finally {
     setLoading(false);
   }
 }
 
-loadDataset();
+loadAmazonDataset();
+
+async function loadUploadedFile(file) {
+  if (!file) return;
+  setLoading(true);
+  setDataStatus(`Loading ${file.name}…`);
+
+  try {
+    const rows = await readFileRows(file);
+    await applyRows(rows, file.name, { kind: "file", file });
+  } catch (error) {
+    handleDataLoadError(error);
+  } finally {
+    elements.datasetFile.value = "";
+    setLoading(false);
+  }
+}
+
+async function loadGoogleSheet() {
+  const sourceUrl = elements.googleSheetUrl.value.trim();
+  if (!sourceUrl) {
+    setDataStatus("Paste a public Google Sheet link before loading it.", "error");
+    return;
+  }
+
+  setLoading(true);
+  setDataStatus("Loading public Google Sheet…");
+  try {
+    const csvUrl = getGoogleSheetCsvUrl(sourceUrl);
+    const response = await fetch(csvUrl, { cache: "no-store" });
+    if (!response.ok) throw new Error(`The Google Sheet could not be loaded (${response.status}). Check its sharing settings.`);
+    await applyRows(parseCsv(await response.text()), "Google Sheet", { kind: "google-sheet", sourceUrl });
+  } catch (error) {
+    handleDataLoadError(error);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function refreshActiveDataset() {
+  if (activeSource.kind === "file") {
+    await loadUploadedFile(activeSource.file);
+    return;
+  }
+  if (activeSource.kind === "google-sheet") {
+    elements.googleSheetUrl.value = activeSource.sourceUrl;
+    await loadGoogleSheet();
+    return;
+  }
+  await loadAmazonDataset();
+}
+
+async function applyRows(rows, fileName, source) {
+  const { records, skippedRows, fieldVerification } = validateAndNormalizeRows(rows);
+  await normalizePricesToUsd(records);
+  resetDataFilters();
+  activeSource = source;
+  currentReport = buildReport(records, skippedRows, fileName, fieldVerification, 1);
+  renderReport(currentReport);
+  setDataStatus(`${records.length.toLocaleString()} product records loaded from ${fileName}. Prices are shown in USD.`, "success");
+}
+
+function handleDataLoadError(error) {
+  setDataStatus(error.message || "The dataset could not be loaded. Check the file format and required columns.", "error");
+}
+
+async function readFileRows(file) {
+  const extension = file.name.split(".").pop().toLocaleLowerCase();
+  if (extension === "csv") return parseCsv(await file.text());
+  if (!new Set(["xls", "xlsx", "ods"]).has(extension)) {
+    throw new Error("Choose a CSV, XLS, XLSX, or ODS file.");
+  }
+  if (!window.XLSX) throw new Error("Spreadsheet support could not be loaded. Check your internet connection and try again.");
+
+  const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array" });
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!worksheet) throw new Error("The spreadsheet does not contain a worksheet.");
+  return window.XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "", raw: false })
+    .map((row) => row.map((value) => String(value)));
+}
+
+function getGoogleSheetCsvUrl(sourceUrl) {
+  const url = new URL(sourceUrl);
+  const match = url.pathname.match(/\/spreadsheets\/d\/([^/]+)/);
+  if (!match || !url.hostname.endsWith("google.com")) {
+    throw new Error("Use a public Google Sheets link from docs.google.com.");
+  }
+  const fragmentParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+  const gid = url.searchParams.get("gid") || fragmentParams.get("gid") || "0";
+  return `https://docs.google.com/spreadsheets/d/${match[1]}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(gid)}`;
+}
+
+function resetDataFilters() {
+  elements.parentCategoryFilter.value = "";
+  elements.childCategoryFilter.value = "";
+  elements.subChildCategoryFilter.value = "";
+  elements.productSearch.value = "";
+  tableSortDirection = "ascending";
+  ratingSortDirection = "ascending";
+  tableSortCriterion = "name";
+  nextNameSortDirection = "ascending";
+  nextRatingSortDirection = "ascending";
+  updateTableSortButton();
+  updateRatingSortButton();
+}
 
 async function fetchUsdRate() {
   const response = await fetch(INR_TO_USD_RATE_URL, { cache: "no-store" });
@@ -157,7 +270,11 @@ async function fetchUsdRate() {
   return rate;
 }
 
-function convertPricesToUsd(records, rate) {
+async function normalizePricesToUsd(records) {
+  const needsInrConversion = records.some((record) => /₹/.test(record.actualPriceRaw) || /₹/.test(record.discountedPriceRaw));
+  if (!needsInrConversion) return;
+
+  const rate = await fetchUsdRate();
   records.forEach((record) => {
     record.actualPrice = isNumber(record.actualPrice) ? record.actualPrice * rate : null;
     record.discountedPrice = isNumber(record.discountedPrice) ? record.discountedPrice * rate : null;
@@ -938,12 +1055,32 @@ function exportTextReport() {
 function exportCsvReport() {
   if (!currentReport) return;
 
+  const { headers, rows } = getSummaryExportData(currentReport);
+  const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(",")).join("\n");
+  downloadFile(csv, "product-insights-summary.csv", "text/csv;charset=utf-8");
+}
+
+function exportXlsxReport() {
+  if (!currentReport) return;
+  if (!window.XLSX) {
+    setDataStatus("XLSX export is unavailable. Check your internet connection and try again.", "error");
+    return;
+  }
+
+  const { headers, rows } = getSummaryExportData(currentReport);
+  const workbook = window.XLSX.utils.book_new();
+  const worksheet = window.XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  window.XLSX.utils.book_append_sheet(workbook, worksheet, "Product Summary");
+  window.XLSX.writeFile(workbook, "product-insights-summary.xlsx", { compression: true });
+}
+
+function getSummaryExportData(report) {
   const headers = [
     "Category", "Product Count", "Average Actual Price (USD)", "Average Discounted Price (USD)", "Average Rating", "Total Rating Count",
     "Average Discount Percentage", "Highest-Rated Product", "Lowest-Rated Product",
     "Common Praise", "Common Complaints", "Summary",
   ];
-  const rows = currentReport.categories.map((category) => [
+  const rows = report.categories.map((category) => [
     category.name,
     category.productCount,
     isNumber(category.averageActualPrice) ? formatDataValue(category.averageActualPrice) : "",
@@ -957,8 +1094,7 @@ function exportCsvReport() {
     category.complaints,
     category.summary,
   ]);
-  const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(",")).join("\n");
-  downloadFile(csv, "product-insights-summary.csv", "text/csv;charset=utf-8");
+  return { headers, rows };
 }
 
 function normalizeHeader(header) {
@@ -1034,6 +1170,10 @@ function setLoading(isLoading) {
   elements.loading.hidden = !isLoading;
   elements.reloadData.disabled = isLoading;
   elements.refreshReport.disabled = isLoading;
+  elements.datasetFile.disabled = isLoading;
+  elements.loadGoogleSheet.disabled = isLoading;
+  elements.googleSheetUrl.disabled = isLoading;
+  elements.datasetDropZone.setAttribute("aria-disabled", String(isLoading));
 }
 
 function waitForPaint() {

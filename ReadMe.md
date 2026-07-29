@@ -9,8 +9,9 @@ A browser-based MVP that transforms e-commerce product CSV data into readable, e
 - Calculate all-products and category-level performance metrics, including each applicable numeric-field average.
 - Identify basic praise and complaint themes from customer reviews.
 - Generate a plain-language summary for every category.
-- Download the report as text or CSV, or print it as a PDF.
+- Download the report as text, CSV, or XLSX, or print it as a PDF.
 - Keep uploaded data in the browser without permanent storage.
+- Replace the default with a matching CSV, XLS, XLSX, ODS, or public Google Sheet.
 
 ## Run Locally
 
@@ -38,11 +39,11 @@ The following display fields are read-only. The importer never writes back to th
 | Rating Count | Whole number | `rating_count` |
 | Customer Review | Text | `review_content` |
 
-The source CSV remains unchanged.
+The source CSV remains unchanged. Uploaded files are also read in the browser only. Values explicitly marked with `₹` are converted in memory to USD; uploaded prices without that marker are treated as already USD for display.
 
-The imported-data table and summaries share Parent, Child, and Sub-Child filters. Summaries begin at the Parent level and move to the deepest selected level; product rows display only the Parent and final category segment. Category labels are formatted for readability without changing the source strings. Product Name/Product ID search and a Product Name ascending/descending toggle are also available. Summary cards and product rows each scroll inside their own container, with table headers kept visible. These views do not delete or reorder source CSV rows.
+The imported-data table and summaries share Parent, Child, and Sub-Child filters. Summaries begin at the Parent level and move to the deepest selected level; product rows display only the Parent and final category segment. Category labels are formatted for readability without changing the source strings. Product Name/Product ID search and name/rating ascending/descending controls are also available. Summary cards and product rows each scroll inside their own container, with table headers kept visible. These views do not delete or reorder source rows.
 
-`Data/amazon.csv` is the read-only source automatically loaded by the board. There is no upload step.
+`Data/amazon.csv` is the read-only source automatically loaded by the board. A user can drag in or browse for a CSV, XLS, XLSX, or ODS file; the first worksheet is used. A public Google Sheets link can also be loaded. A custom source replaces the active board session only, and **Restore Amazon data** returns the board to the bundled dataset.
 
 ## MVP Scope
 
