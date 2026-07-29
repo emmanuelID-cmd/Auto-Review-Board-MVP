@@ -49,6 +49,7 @@ const NEGATIVE_WORDS = new Set([
 ]);
 
 const GENERIC_SENTIMENT_WORDS = new Set([...POSITIVE_WORDS, ...NEGATIVE_WORDS]);
+const INR_TO_USD_RATE_URL = "https://api.frankfurter.dev/v2/rate/INR/USD";
 
 const elements = {
   loading: document.querySelector("#loading"),
@@ -57,6 +58,7 @@ const elements = {
   results: document.querySelector("#results"),
   importNote: document.querySelector("#import-note"),
   reportGeneratedAt: document.querySelector("#report-generated-at"),
+  overallTitle: document.querySelector("#overall-title"),
   overallMetrics: document.querySelector("#overall-metrics"),
   categoryCount: document.querySelector("#category-count"),
   categoryList: document.querySelector("#category-list"),
@@ -67,6 +69,9 @@ const elements = {
   uploadedDataSummary: document.querySelector("#uploaded-data-summary"),
   uploadedDataBody: document.querySelector("#uploaded-data-body"),
   uploadedDataDetails: document.querySelector(".uploaded-data-details"),
+  reviewDialog: document.querySelector("#review-dialog"),
+  reviewDialogContent: document.querySelector("#review-dialog-content"),
+  closeReviewDialog: document.querySelector("#close-review-dialog"),
   dataVerificationBody: document.querySelector("#data-verification-body"),
   parentCategoryFilter: document.querySelector("#parent-category-filter"),
   childCategoryFilter: document.querySelector("#child-category-filter"),
@@ -88,6 +93,11 @@ elements.childCategoryFilter.addEventListener("change", handleChildCategoryChang
 elements.subChildCategoryFilter.addEventListener("change", renderFilteredViews);
 elements.productSearch.addEventListener("input", renderFilteredViews);
 elements.tableSortToggle.addEventListener("click", toggleTableSort);
+elements.uploadedDataBody.addEventListener("click", handleReviewAction);
+elements.closeReviewDialog.addEventListener("click", () => elements.reviewDialog.close());
+elements.reviewDialog.addEventListener("click", (event) => {
+  if (event.target === elements.reviewDialog) elements.reviewDialog.close();
+});
 
 async function loadDataset() {
   setLoading(true);
@@ -95,13 +105,17 @@ async function loadDataset() {
 
   try {
     await waitForPaint();
-    const response = await fetch("./Data/amazon.csv", { cache: "no-store" });
+    const [response, usdRate] = await Promise.all([
+      fetch("./Data/amazon.csv", { cache: "no-store" }),
+      fetchUsdRate(),
+    ]);
     if (!response.ok) {
       throw new Error(`The dataset could not be loaded (${response.status}).`);
     }
     const contents = await response.text();
     const parsedRows = parseCsv(contents);
     const { records, skippedRows, fieldVerification } = validateAndNormalizeRows(parsedRows);
+    convertPricesToUsd(records, usdRate);
     currentReport = buildReport(
       records,
       skippedRows,
@@ -110,7 +124,7 @@ async function loadDataset() {
       1,
     );
     renderReport(currentReport);
-    setDataStatus(`${records.length.toLocaleString()} product records loaded from the approved dataset.`, "success");
+    setDataStatus(`${records.length.toLocaleString()} product records loaded. Prices are shown in USD.`, "success");
   } catch (error) {
     currentReport = null;
     elements.results.hidden = true;
@@ -121,6 +135,26 @@ async function loadDataset() {
 }
 
 loadDataset();
+
+async function fetchUsdRate() {
+  const response = await fetch(INR_TO_USD_RATE_URL, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error("The USD conversion rate could not be loaded.");
+  }
+
+  const { rate } = await response.json();
+  if (!isNumber(rate) || rate <= 0) {
+    throw new Error("The USD conversion rate is invalid.");
+  }
+  return rate;
+}
+
+function convertPricesToUsd(records, rate) {
+  records.forEach((record) => {
+    record.actualPrice = isNumber(record.actualPrice) ? record.actualPrice * rate : null;
+    record.discountedPrice = isNumber(record.discountedPrice) ? record.discountedPrice * rate : null;
+  });
+}
 
 function parseCsv(text) {
   if (!text || !text.trim()) {
@@ -277,6 +311,10 @@ function buildReport(records, skippedRows, fileName, fieldVerification, summaryD
     .sort((first, second) => first.name.localeCompare(second.name));
 
   const ratings = records.map((record) => record.rating).filter(isNumber);
+  const actualPrices = records.map((record) => record.actualPrice).filter(isNumber);
+  const discountedPrices = records.map((record) => record.discountedPrice).filter(isNumber);
+  const discounts = records.map((record) => record.discountPercentage).filter(isNumber);
+  const ratingCounts = records.map((record) => record.ratingCount).filter(isNumber);
   const mostReviewed = [...categories].sort((a, b) => b.totalRatingCount - a.totalRatingCount)[0];
   const ratedCategories = categories.filter((category) => isNumber(category.averageRating));
   const lowestRated = [...ratedCategories].sort((a, b) => a.averageRating - b.averageRating)[0] || null;
@@ -286,7 +324,13 @@ function buildReport(records, skippedRows, fileName, fieldVerification, summaryD
     importedRecords: records.length,
     skippedRows,
     categoryCount: categories.length,
+    overallAverageActualPrice: average(actualPrices),
+    overallAverageDiscountedPrice: average(discountedPrices),
+    overallAverageDiscount: average(discounts),
     overallAverageRating: average(ratings),
+    overallAverageRatingCount: average(ratingCounts),
+    overallTotalRatingCount: sum(ratingCounts),
+    overallReviewCount: records.filter((record) => record.customerReview.trim() !== "").length,
     mostReviewedCategory: mostReviewed,
     lowestRatedCategory: lowestRated,
     categories,
@@ -298,6 +342,7 @@ function buildReport(records, skippedRows, fileName, fieldVerification, summaryD
 
 function analyzeCategory(name, records) {
   const ratings = records.map((record) => record.rating).filter(isNumber);
+  const ratingCounts = records.map((record) => record.ratingCount).filter(isNumber);
   const discounts = records.map((record) => record.discountPercentage).filter(isNumber);
   const ratedProducts = records.filter((record) => isNumber(record.rating));
   const sortedRatings = [...ratedProducts].sort((a, b) => b.rating - a.rating);
@@ -311,7 +356,8 @@ function analyzeCategory(name, records) {
     averageActualPrice: average(records.map((record) => record.actualPrice).filter(isNumber)),
     averageDiscountedPrice: average(records.map((record) => record.discountedPrice).filter(isNumber)),
     averageRating: average(ratings),
-    totalRatingCount: sum(records.map((record) => record.ratingCount)),
+    averageRatingCount: average(ratingCounts),
+    totalRatingCount: sum(ratingCounts),
     averageDiscount: average(discounts),
     highestRatedProduct: sortedRatings[0] || null,
     lowestRatedProduct: sortedRatings[sortedRatings.length - 1] || null,
@@ -413,14 +459,20 @@ function renderSummary(report) {
     ? ` ${report.skippedRows.toLocaleString()} incomplete row${report.skippedRows === 1 ? " was" : "s were"} skipped.`
     : "";
   elements.importNote.textContent = `${report.importedRecords.toLocaleString()} records imported from ${report.fileName}.${skippedText} See Data Verification for the field-by-field audit.`;
+  elements.overallTitle.textContent = hasActiveProductFilters() ? "Filtered Products Summary" : "All Products Summary";
   elements.reportGeneratedAt.textContent = `Summary built: ${formatGeneratedTimestamp(report.generatedAt)}`;
   elements.categoryCount.textContent = `${report.categoryCount} categor${report.categoryCount === 1 ? "y" : "ies"}`;
 
   const overallMetrics = [
-    ["Records", formatNumber(report.importedRecords)],
-    ["Categories", formatNumber(report.categoryCount)],
+    ["Product records", formatNumber(report.importedRecords)],
+    [hasActiveProductFilters() ? "Summary categories" : "Parent categories", formatNumber(report.categoryCount)],
+    ["Average actual price", formatDataValue(report.overallAverageActualPrice)],
+    ["Average discounted price", formatDataValue(report.overallAverageDiscountedPrice)],
+    ["Average discount", formatPercentage(report.overallAverageDiscount)],
     ["Average rating", formatRating(report.overallAverageRating)],
-    ["Total ratings", formatNumber(report.categories.reduce((total, category) => total + category.totalRatingCount, 0))],
+    ["Average rating count", formatAverageNumber(report.overallAverageRatingCount)],
+    ["Total rating count", formatNumber(report.overallTotalRatingCount)],
+    ["Reviews", formatNumber(report.overallReviewCount)],
     ["Most reviewed", report.mostReviewedCategory?.name || "Not available", true],
     ["Lowest rated", report.lowestRatedCategory?.name || "Not available", true],
   ];
@@ -588,8 +640,8 @@ function renderCurrentTable(records = getFilteredRecords()) {
       record.productId,
       record.productName,
       formatProductCategory(record),
-      record.actualPriceRaw || "Not provided",
-      record.discountedPriceRaw || "Not provided",
+      formatDataValue(record.actualPrice),
+      formatDataValue(record.discountedPrice),
       record.discountPercentageRaw || "Not provided",
       record.ratingRaw || "Not provided",
       record.ratingCountRaw || "Not provided",
@@ -598,14 +650,27 @@ function renderCurrentTable(records = getFilteredRecords()) {
     values.forEach((value, index) => {
       const cell = document.createElement("td");
       if (index === values.length - 1) {
+        cell.className = "review-cell";
         cell.append(createElement("div", "review-cell-content", value));
+        const expandButton = createElement("button", "review-expand-button", "Expand");
+        expandButton.type = "button";
+        expandButton.reviewText = value;
+        cell.append(expandButton);
       } else {
-        cell.textContent = value;
+        cell.append(createElement("div", "table-cell-content", value));
       }
       row.append(cell);
     });
     elements.uploadedDataBody.append(row);
   });
+}
+
+function handleReviewAction(event) {
+  const button = event.target.closest(".review-expand-button");
+  if (!button) return;
+
+  elements.reviewDialogContent.textContent = button.reviewText;
+  elements.reviewDialog.showModal();
 }
 
 function getParentCategory(record) {
@@ -659,6 +724,15 @@ function getFilteredRecords() {
       .some((value) => value.toLocaleLowerCase().includes(searchTerm)));
 }
 
+function hasActiveProductFilters() {
+  return Boolean(
+    elements.parentCategoryFilter.value
+    || elements.childCategoryFilter.value
+    || elements.subChildCategoryFilter.value
+    || elements.productSearch.value.trim(),
+  );
+}
+
 function toggleTableSort() {
   tableSortDirection = tableSortDirection === "ascending" ? "descending" : "ascending";
   updateTableSortButton();
@@ -675,7 +749,11 @@ function formatDataValue(value) {
   if (!isNumber(value)) {
     return "Not available";
   }
-  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function formatGeneratedTimestamp(date) {
@@ -700,7 +778,8 @@ function createCategoryCard(category) {
     ["Average discounted price", formatDataValue(category.averageDiscountedPrice)],
     ["Average discount", formatPercentage(category.averageDiscount)],
     ["Products", formatNumber(category.productCount)],
-    ["Rating count", formatNumber(category.totalRatingCount)],
+    ["Average rating count", formatAverageNumber(category.averageRatingCount)],
+    ["Total rating count", formatNumber(category.totalRatingCount)],
   ].forEach(([label, value]) => {
     const metric = createElement("div", "category-metric");
     metric.append(createElement("span", "", label), createElement("strong", "", value));
@@ -775,15 +854,15 @@ function exportCsvReport() {
   if (!currentReport) return;
 
   const headers = [
-    "Category", "Product Count", "Average Actual Price", "Average Discounted Price", "Average Rating", "Total Rating Count",
+    "Category", "Product Count", "Average Actual Price (USD)", "Average Discounted Price (USD)", "Average Rating", "Total Rating Count",
     "Average Discount Percentage", "Highest-Rated Product", "Lowest-Rated Product",
     "Common Praise", "Common Complaints", "Summary",
   ];
   const rows = currentReport.categories.map((category) => [
     category.name,
     category.productCount,
-    category.averageActualPrice?.toFixed(2) || "",
-    category.averageDiscountedPrice?.toFixed(2) || "",
+    isNumber(category.averageActualPrice) ? formatDataValue(category.averageActualPrice) : "",
+    isNumber(category.averageDiscountedPrice) ? formatDataValue(category.averageDiscountedPrice) : "",
     category.averageRating?.toFixed(2) || "",
     category.totalRatingCount,
     category.averageDiscount?.toFixed(2) || "",
@@ -833,6 +912,12 @@ function isNumber(value) {
 
 function formatNumber(value) {
   return Math.round(value || 0).toLocaleString();
+}
+
+function formatAverageNumber(value) {
+  return isNumber(value)
+    ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+    : "Not available";
 }
 
 function formatRating(value) {

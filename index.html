@@ -63,7 +63,7 @@
         </div>
 
         <section aria-labelledby="overall-title">
-          <h3 id="overall-title">Overall Summary</h3>
+          <h3 id="overall-title">All Products Summary</h3>
           <div class="metric-grid" id="overall-metrics"></div>
         </section>
 
@@ -174,6 +174,14 @@
     <footer>
       <p>Auto-Review Board · MVP</p>
     </footer>
+
+    <dialog class="review-dialog" id="review-dialog" aria-labelledby="review-dialog-title">
+      <div class="review-dialog-header">
+        <h2 id="review-dialog-title">Customer Review</h2>
+        <button class="icon-button" id="close-review-dialog" type="button" aria-label="Close expanded review">×</button>
+      </div>
+      <div class="review-dialog-content" id="review-dialog-content"></div>
+    </dialog>
 
     <script src="script.js"></script>
   </body>

@@ -7,7 +7,7 @@ A browser-based MVP that transforms e-commerce product CSV data into readable, e
 - Automatically load the bundled Amazon dataset when the site opens.
 - Use the nine approved Amazon review fields only.
 - Require all nine board fields and report missing or whitespace-only data without modifying the CSV.
-- Calculate overall and category-level performance metrics.
+- Calculate all-products and category-level performance metrics, including each applicable numeric-field average.
 - Identify basic praise and complaint themes from customer reviews.
 - Generate a plain-language summary for every category.
 - Download the report as text or CSV, or print it as a PDF.
@@ -25,7 +25,7 @@ Then visit `http://localhost:8000`.
 
 ## Imported Board Columns
 
-The following display fields are read-only. The importer never writes back to the uploaded CSV or changes its row values. Capitalization and extra spaces in headers are ignored; Amazon `snake_case` headers are supported.
+The following display fields are read-only. The importer never writes back to the source CSV or changes its row values. Capitalization and extra spaces in headers are ignored; Amazon `snake_case` headers are supported. INR price values are converted in memory and displayed only as USD using the latest rate retrieved from Frankfurter.
 
 | Board column | Data type | Accepted source headers |
 | --- | --- | --- |
