@@ -703,54 +703,6 @@ h3 {
   margin-top: 48px;
 }
 
-.data-verification-section {
-  margin-top: 48px;
-}
-
-.verification-table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-medium);
-}
-
-.verification-table {
-  width: 100%;
-  min-width: 760px;
-  border-collapse: collapse;
-  font-size: 0.88rem;
-}
-
-.verification-table th,
-.verification-table td {
-  padding: 13px 16px;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-}
-
-.verification-table th {
-  color: var(--muted);
-  background: var(--green-50);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.verification-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.verification-status {
-  font-weight: 750;
-}
-
-.verification-status.available {
-  color: var(--green-700);
-}
-
-.verification-status.placeholder {
-  color: var(--amber-700);
-}
-
 .uploaded-data-section .section-heading {
   margin-bottom: 18px;
 }

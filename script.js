@@ -72,7 +72,6 @@ const elements = {
   reviewDialog: document.querySelector("#review-dialog"),
   reviewDialogContent: document.querySelector("#review-dialog-content"),
   closeReviewDialog: document.querySelector("#close-review-dialog"),
-  dataVerificationBody: document.querySelector("#data-verification-body"),
   parentCategoryFilter: document.querySelector("#parent-category-filter"),
   childCategoryFilter: document.querySelector("#child-category-filter"),
   subChildCategoryFilter: document.querySelector("#sub-child-category-filter"),
@@ -444,7 +443,6 @@ function createCategorySummary(category) {
 
 function renderReport(report) {
   renderSummary(report);
-  renderDataVerification(report.fieldVerification);
   renderUploadedData(report);
 
   elements.results.hidden = false;
@@ -458,7 +456,7 @@ function renderSummary(report) {
   const skippedText = report.skippedRows > 0
     ? ` ${report.skippedRows.toLocaleString()} incomplete row${report.skippedRows === 1 ? " was" : "s were"} skipped.`
     : "";
-  elements.importNote.textContent = `${report.importedRecords.toLocaleString()} records imported from ${report.fileName}.${skippedText} See Data Verification for the field-by-field audit.`;
+  elements.importNote.textContent = `${report.importedRecords.toLocaleString()} records imported from ${report.fileName}.${skippedText}`;
   elements.overallTitle.textContent = hasActiveProductFilters() ? "Filtered Products Summary" : "All Products Summary";
   elements.reportGeneratedAt.textContent = `Summary built: ${formatGeneratedTimestamp(report.generatedAt)}`;
   elements.categoryCount.textContent = `${report.categoryCount} categor${report.categoryCount === 1 ? "y" : "ies"}`;
@@ -489,30 +487,6 @@ function renderSummary(report) {
     elements.categoryList.append(createCategoryCard(category));
   });
 
-}
-
-function renderDataVerification(fieldVerification) {
-  elements.dataVerificationBody.replaceChildren();
-
-  fieldVerification.forEach((field) => {
-    const row = document.createElement("tr");
-    const availability = createElement(
-      "span",
-      `verification-status ${field.exists ? "available" : "placeholder"}`,
-      field.exists ? "Available" : "Placeholder",
-    );
-    [field.label, field.sourceHeader, field.dataType].forEach((value) => {
-      row.append(createElement("td", "", value));
-    });
-    const availabilityCell = document.createElement("td");
-    availabilityCell.append(availability);
-    row.append(
-      availabilityCell,
-      createElement("td", "", formatNumber(field.missingValues)),
-      createElement("td", "", formatNumber(field.whitespaceOnlyValues)),
-    );
-    elements.dataVerificationBody.append(row);
-  });
 }
 
 function renderUploadedData(report) {
