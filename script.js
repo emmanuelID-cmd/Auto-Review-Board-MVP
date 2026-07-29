@@ -584,7 +584,7 @@ function renderCurrentTable(records = getFilteredRecords()) {
 
   sortedRecords.forEach((record) => {
     const row = document.createElement("tr");
-    [
+    const values = [
       record.productId,
       record.productName,
       formatProductCategory(record),
@@ -594,8 +594,15 @@ function renderCurrentTable(records = getFilteredRecords()) {
       record.ratingRaw || "Not provided",
       record.ratingCountRaw || "Not provided",
       record.customerReview || "Not provided",
-    ].forEach((value) => {
-      row.append(createElement("td", "", value));
+    ];
+    values.forEach((value, index) => {
+      const cell = document.createElement("td");
+      if (index === values.length - 1) {
+        cell.append(createElement("div", "review-cell-content", value));
+      } else {
+        cell.textContent = value;
+      }
+      row.append(cell);
     });
     elements.uploadedDataBody.append(row);
   });
