@@ -846,6 +846,17 @@ h3 {
   gap: 9px;
 }
 
+#print-report {
+  color: #164e78;
+  border-color: #93c5fd;
+  background: #dbeafe;
+}
+
+#print-report:hover:not(:disabled) {
+  border-color: #60a5fa;
+  background: #bfdbfe;
+}
+
 .uploaded-data-section {
   margin-top: 48px;
 }
