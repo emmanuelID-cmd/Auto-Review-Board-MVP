@@ -886,6 +886,17 @@ function getFilteredRecords() {
       .some((value) => value.toLocaleLowerCase().includes(searchTerm)));
 }
 
+function getVisibleReport() {
+  if (!currentReport) return null;
+  return buildReport(
+    getFilteredRecords(),
+    0,
+    currentReport.fileName,
+    currentReport.fieldVerification,
+    getSummaryDepth(),
+  );
+}
+
 function hasActiveProductFilters() {
   return Boolean(
     elements.parentCategoryFilter.value
@@ -1016,9 +1027,9 @@ function createCategoryCard(category) {
 }
 
 function exportTextReport() {
-  if (!currentReport) return;
+  const report = getVisibleReport();
+  if (!report) return;
 
-  const report = currentReport;
   const lines = [
     "E-COMMERCE PRODUCT INSIGHTS REPORT",
     `Generated: ${report.generatedAt.toLocaleString()}`,
@@ -1034,7 +1045,7 @@ function exportTextReport() {
     "CATEGORY REPORTS",
   ];
 
-  report.categories.forEach((category) => {
+  [...report.categories].sort(compareSummaryItems).forEach((category) => {
     lines.push(
       "",
       category.name.toUpperCase(),
@@ -1053,21 +1064,23 @@ function exportTextReport() {
 }
 
 function exportCsvReport() {
-  if (!currentReport) return;
+  const report = getVisibleReport();
+  if (!report) return;
 
-  const { headers, rows } = getSummaryExportData(currentReport);
+  const { headers, rows } = getSummaryExportData(report);
   const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(",")).join("\n");
   downloadFile(csv, "product-insights-summary.csv", "text/csv;charset=utf-8");
 }
 
 function exportXlsxReport() {
-  if (!currentReport) return;
+  const report = getVisibleReport();
+  if (!report) return;
   if (!window.XLSX) {
     setDataStatus("XLSX export is unavailable. Check your internet connection and try again.", "error");
     return;
   }
 
-  const { headers, rows } = getSummaryExportData(currentReport);
+  const { headers, rows } = getSummaryExportData(report);
   const workbook = window.XLSX.utils.book_new();
   const worksheet = window.XLSX.utils.aoa_to_sheet([headers, ...rows]);
   window.XLSX.utils.book_append_sheet(workbook, worksheet, "Product Summary");
@@ -1080,7 +1093,7 @@ function getSummaryExportData(report) {
     "Average Discount Percentage", "Highest-Rated Product", "Lowest-Rated Product",
     "Common Praise", "Common Complaints", "Summary",
   ];
-  const rows = report.categories.map((category) => [
+  const rows = [...report.categories].sort(compareSummaryItems).map((category) => [
     category.name,
     category.productCount,
     isNumber(category.averageActualPrice) ? formatDataValue(category.averageActualPrice) : "",

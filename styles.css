@@ -821,6 +821,7 @@ h3 {
   margin-top: 48px;
   padding: 26px;
   align-items: center;
+  flex-wrap: wrap;
   border-radius: var(--radius-medium);
   background: var(--green-900);
 }
@@ -844,6 +845,14 @@ h3 {
 .export-actions {
   display: flex;
   gap: 9px;
+}
+
+.export-note {
+  width: 100%;
+  margin: 0;
+  color: white;
+  font-size: 0.78rem;
+  opacity: 0.75;
 }
 
 #print-report {
