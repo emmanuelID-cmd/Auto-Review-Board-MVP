@@ -99,6 +99,29 @@
             </div>
             <span class="category-count" id="category-count"></span>
           </div>
+          <div class="data-filter-controls" aria-label="Summary and product data filters">
+            <label for="parent-category-filter">Parent Category
+              <select id="parent-category-filter">
+                <option value="">All parent categories</option>
+              </select>
+            </label>
+            <label for="child-category-filter">Child Category
+              <select id="child-category-filter" disabled>
+                <option value="">Select a parent category first</option>
+              </select>
+            </label>
+            <label for="sub-child-category-filter">Sub-Child Category
+              <select id="sub-child-category-filter" disabled>
+                <option value="">Select a child category first</option>
+              </select>
+            </label>
+            <label for="product-search">Find a Product
+              <input id="product-search" type="search" placeholder="Product name or ID" autocomplete="off">
+            </label>
+            <button class="secondary-button compact" id="table-sort-toggle" type="button" aria-pressed="false">
+              Product name: ascending
+            </button>
+          </div>
           <div class="category-list" id="category-list"></div>
         </section>
 
@@ -125,24 +148,6 @@
 
           <details class="uploaded-data-details">
             <summary id="uploaded-data-summary">View imported data</summary>
-            <div class="table-controls" aria-label="Imported data controls">
-              <label for="parent-category-filter">Parent Category
-                <select id="parent-category-filter">
-                  <option value="">All parent categories</option>
-                </select>
-              </label>
-              <label for="specific-category-filter">Specific Category
-                <select id="specific-category-filter" disabled>
-                  <option value="">Select a parent category first</option>
-                </select>
-              </label>
-              <label for="product-search">Find a Product
-                <input id="product-search" type="search" placeholder="Product name or ID" autocomplete="off">
-              </label>
-              <button class="secondary-button compact" id="table-sort-toggle" type="button" aria-pressed="false">
-                Product name: ascending
-              </button>
-            </div>
             <div class="uploaded-data-table-wrap">
               <table class="uploaded-data-table" aria-label="Uploaded CSV records">
                 <thead>

@@ -69,7 +69,8 @@ const elements = {
   uploadedDataDetails: document.querySelector(".uploaded-data-details"),
   dataVerificationBody: document.querySelector("#data-verification-body"),
   parentCategoryFilter: document.querySelector("#parent-category-filter"),
-  specificCategoryFilter: document.querySelector("#specific-category-filter"),
+  childCategoryFilter: document.querySelector("#child-category-filter"),
+  subChildCategoryFilter: document.querySelector("#sub-child-category-filter"),
   productSearch: document.querySelector("#product-search"),
   tableSortToggle: document.querySelector("#table-sort-toggle"),
 };
@@ -83,8 +84,9 @@ elements.exportText.addEventListener("click", exportTextReport);
 elements.exportCsv.addEventListener("click", exportCsvReport);
 elements.printReport.addEventListener("click", () => window.print());
 elements.parentCategoryFilter.addEventListener("change", handleParentCategoryChange);
-elements.specificCategoryFilter.addEventListener("change", renderCurrentTable);
-elements.productSearch.addEventListener("input", renderCurrentTable);
+elements.childCategoryFilter.addEventListener("change", handleChildCategoryChange);
+elements.subChildCategoryFilter.addEventListener("change", renderFilteredViews);
+elements.productSearch.addEventListener("input", renderFilteredViews);
 elements.tableSortToggle.addEventListener("click", toggleTableSort);
 
 async function loadDataset() {
@@ -105,6 +107,7 @@ async function loadDataset() {
       skippedRows,
       "amazon.csv",
       fieldVerification,
+      1,
     );
     renderReport(currentReport);
     setDataStatus(`${records.length.toLocaleString()} product records loaded from the approved dataset.`, "success");
@@ -257,13 +260,14 @@ function validateAndNormalizeRows(rows) {
   return { records, skippedRows, fieldVerification };
 }
 
-function buildReport(records, skippedRows, fileName, fieldVerification) {
+function buildReport(records, skippedRows, fileName, fieldVerification, summaryDepth = 1) {
   const groupedRecords = new Map();
 
   records.forEach((record) => {
-    const key = record.category.toLocaleLowerCase();
+    const categoryLabel = getSummaryCategoryLabel(record, summaryDepth);
+    const key = categoryLabel.toLocaleLowerCase();
     if (!groupedRecords.has(key)) {
-      groupedRecords.set(key, { name: record.category, records: [] });
+      groupedRecords.set(key, { name: categoryLabel, records: [] });
     }
     groupedRecords.get(key).records.push(record);
   });
@@ -393,6 +397,15 @@ function createCategorySummary(category) {
 }
 
 function renderReport(report) {
+  renderSummary(report);
+  renderDataVerification(report.fieldVerification);
+  renderUploadedData(report);
+
+  elements.results.hidden = false;
+  elements.results.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderSummary(report) {
   elements.overallMetrics.replaceChildren();
   elements.categoryList.replaceChildren();
 
@@ -424,11 +437,6 @@ function renderReport(report) {
     elements.categoryList.append(createCategoryCard(category));
   });
 
-  renderDataVerification(report.fieldVerification);
-  renderUploadedData(report);
-
-  elements.results.hidden = false;
-  elements.results.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderDataVerification(fieldVerification) {
@@ -465,20 +473,36 @@ function renderUploadedData(report) {
   const parentCategories = [...new Set(report.records.map(getParentCategory))]
     .sort((first, second) => first.localeCompare(second));
   elements.parentCategoryFilter.replaceChildren(new Option("All parent categories", ""));
-  parentCategories.forEach((category) => elements.parentCategoryFilter.add(new Option(category, category)));
+  parentCategories.forEach((category) => elements.parentCategoryFilter.add(new Option(formatCategoryLabel(category), category)));
   elements.parentCategoryFilter.value = parentCategories.includes(selectedParent) ? selectedParent : "";
-  populateSpecificCategoryFilter(report.records, elements.parentCategoryFilter.value);
-  renderCurrentTable();
+  populateChildCategoryFilter(report.records, elements.parentCategoryFilter.value);
+  populateSubChildCategoryFilter(
+    report.records,
+    elements.parentCategoryFilter.value,
+    elements.childCategoryFilter.value,
+  );
+  renderFilteredViews();
 }
 
 function handleParentCategoryChange() {
   if (!currentReport) return;
-  populateSpecificCategoryFilter(currentReport.records, elements.parentCategoryFilter.value);
-  renderCurrentTable();
+  populateChildCategoryFilter(currentReport.records, elements.parentCategoryFilter.value);
+  populateSubChildCategoryFilter(currentReport.records, elements.parentCategoryFilter.value, "");
+  renderFilteredViews();
 }
 
-function populateSpecificCategoryFilter(records, parentCategory) {
-  const select = elements.specificCategoryFilter;
+function handleChildCategoryChange() {
+  if (!currentReport) return;
+  populateSubChildCategoryFilter(
+    currentReport.records,
+    elements.parentCategoryFilter.value,
+    elements.childCategoryFilter.value,
+  );
+  renderFilteredViews();
+}
+
+function populateChildCategoryFilter(records, parentCategory) {
+  const select = elements.childCategoryFilter;
   const selectedCategory = select.value;
 
   if (!parentCategory) {
@@ -487,28 +511,67 @@ function populateSpecificCategoryFilter(records, parentCategory) {
     return;
   }
 
-  const specificCategories = [...new Set(
+  const childCategories = [...new Set(
     records
       .filter((record) => getParentCategory(record) === parentCategory)
-      .map((record) => record.category),
+      .map((record) => getCategoryPath(record)[1])
+      .filter(Boolean),
   )].sort((first, second) => first.localeCompare(second));
-  select.replaceChildren(new Option("All specific categories", ""));
-  specificCategories.forEach((category) => select.add(new Option(category, category)));
-  select.value = specificCategories.includes(selectedCategory) ? selectedCategory : "";
+  select.replaceChildren(new Option("All child categories", ""));
+  childCategories.forEach((category) => select.add(new Option(formatCategoryLabel(category), category)));
+  select.value = childCategories.includes(selectedCategory) ? selectedCategory : "";
   select.disabled = false;
 }
 
-function renderCurrentTable() {
+function populateSubChildCategoryFilter(records, parentCategory, childCategory) {
+  const select = elements.subChildCategoryFilter;
+  const selectedCategory = select.value;
+
+  if (!parentCategory || !childCategory) {
+    select.replaceChildren(new Option("Select a child category first", ""));
+    select.disabled = true;
+    return;
+  }
+
+  const subChildCategories = [...new Set(
+    records
+      .filter((record) => getParentCategory(record) === parentCategory)
+      .filter((record) => getCategoryPath(record)[1] === childCategory)
+      .map((record) => getCategoryPath(record)[2])
+      .filter(Boolean),
+  )].sort((first, second) => first.localeCompare(second));
+
+  if (subChildCategories.length === 0) {
+    select.replaceChildren(new Option("No sub-child categories", ""));
+    select.disabled = true;
+    return;
+  }
+
+  select.replaceChildren(new Option("All sub-child categories", ""));
+  subChildCategories.forEach((category) => select.add(new Option(formatCategoryLabel(category), category)));
+  select.value = subChildCategories.includes(selectedCategory) ? selectedCategory : "";
+  select.disabled = false;
+}
+
+function renderFilteredViews() {
   if (!currentReport) return;
 
-  const selectedParent = elements.parentCategoryFilter.value;
-  const selectedCategory = elements.specificCategoryFilter.value;
-  const searchTerm = elements.productSearch.value.trim().toLocaleLowerCase();
-  const records = currentReport.records
-    .filter((record) => !selectedParent || getParentCategory(record) === selectedParent)
-    .filter((record) => !selectedCategory || record.category === selectedCategory)
-    .filter((record) => !searchTerm || [record.productName, record.productId]
-      .some((value) => value.toLocaleLowerCase().includes(searchTerm)))
+  const records = getFilteredRecords();
+  const filteredReport = buildReport(
+    records,
+    0,
+    currentReport.fileName,
+    currentReport.fieldVerification,
+    getSummaryDepth(),
+  );
+  renderSummary(filteredReport);
+  renderCurrentTable(records);
+}
+
+function renderCurrentTable(records = getFilteredRecords()) {
+  if (!currentReport) return;
+
+  const sortedRecords = [...records]
     .sort((first, second) => {
       const comparison = first.productName.localeCompare(second.productName, undefined, { sensitivity: "base" });
       return tableSortDirection === "ascending" ? comparison : -comparison;
@@ -516,12 +579,15 @@ function renderCurrentTable() {
 
   elements.uploadedDataBody.replaceChildren();
 
-  records.forEach((record) => {
+  const recordLabel = sortedRecords.length === 1 ? "record" : "records";
+  elements.uploadedDataSummary.textContent = `View ${formatNumber(sortedRecords.length)} matching ${recordLabel}`;
+
+  sortedRecords.forEach((record) => {
     const row = document.createElement("tr");
     [
       record.productId,
       record.productName,
-      record.category,
+      formatProductCategory(record),
       record.actualPriceRaw || "Not provided",
       record.discountedPriceRaw || "Not provided",
       record.discountPercentageRaw || "Not provided",
@@ -536,7 +602,54 @@ function renderCurrentTable() {
 }
 
 function getParentCategory(record) {
-  return record.category.split("|", 1)[0].trim();
+  return getCategoryPath(record)[0] || "";
+}
+
+function getCategoryPath(record) {
+  return record.category.split("|").map((segment) => segment.trim()).filter(Boolean);
+}
+
+function getSummaryDepth() {
+  if (elements.subChildCategoryFilter.value) return 3;
+  if (elements.childCategoryFilter.value) return 2;
+  return 1;
+}
+
+function getSummaryCategoryLabel(record, depth) {
+  return getCategoryPath(record).slice(0, depth).map(formatCategoryLabel).join(" | ");
+}
+
+function formatProductCategory(record) {
+  const path = getCategoryPath(record);
+  return path.length > 1
+    ? `${formatCategoryLabel(path[0])} | ${formatCategoryLabel(path[path.length - 1])}`
+    : formatCategoryLabel(path[0] || "Not provided");
+}
+
+function formatCategoryLabel(value) {
+  return value
+    .replace(/,/g, ", ")
+    .replace(/&/g, " & ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getFilteredRecords() {
+  if (!currentReport) return [];
+
+  const parentCategory = elements.parentCategoryFilter.value;
+  const childCategory = elements.childCategoryFilter.value;
+  const subChildCategory = elements.subChildCategoryFilter.value;
+  const searchTerm = elements.productSearch.value.trim().toLocaleLowerCase();
+
+  return currentReport.records
+    .filter((record) => !parentCategory || getCategoryPath(record)[0] === parentCategory)
+    .filter((record) => !childCategory || getCategoryPath(record)[1] === childCategory)
+    .filter((record) => !subChildCategory || getCategoryPath(record)[2] === subChildCategory)
+    .filter((record) => !searchTerm || [record.productName, record.productId]
+      .some((value) => value.toLocaleLowerCase().includes(searchTerm)));
 }
 
 function toggleTableSort() {

@@ -41,7 +41,7 @@ The following display fields are read-only. The importer never writes back to th
 
 Data Verification reports missing/whitespace values and also counts whitespace-only values separately. The uploaded CSV remains unchanged.
 
-The imported-data table supports Parent Category filtering, an optional Specific Category filter that depends on the selected parent, Product Name/Product ID search, and a Product Name ascending/descending toggle. It does not delete or reorder source CSV rows.
+The imported-data table and summaries share Parent, Child, and Sub-Child filters. Summaries begin at the Parent level and move to the deepest selected level; product rows display only the Parent and final category segment. Category labels are formatted for readability without changing the source strings. Product Name/Product ID search and a Product Name ascending/descending toggle are also available. Summary cards and product rows each scroll inside their own container, with table headers kept visible. These views do not delete or reorder source CSV rows.
 
 `Data/amazon.csv` is the read-only source automatically loaded by the board. There is no upload step.
 

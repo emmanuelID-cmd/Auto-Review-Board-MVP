@@ -570,6 +570,10 @@ h3 {
 .category-list {
   display: grid;
   gap: 18px;
+  max-height: min(72vh, 820px);
+  overflow-y: auto;
+  padding-right: 8px;
+  overscroll-behavior: contain;
 }
 
 .category-card {
@@ -771,9 +775,9 @@ h3 {
   font-weight: 750;
 }
 
-.table-controls {
+.data-filter-controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   align-items: end;
   gap: 14px;
   padding: 16px 22px;
@@ -781,7 +785,7 @@ h3 {
   background: var(--surface);
 }
 
-.table-controls label {
+.data-filter-controls label {
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -790,8 +794,8 @@ h3 {
   font-weight: 700;
 }
 
-.table-controls select,
-.table-controls input {
+.data-filter-controls select,
+.data-filter-controls input {
   min-height: 40px;
   padding: 8px 10px;
   border: 1px solid var(--line);
@@ -801,7 +805,9 @@ h3 {
 }
 
 .uploaded-data-table-wrap {
-  overflow-x: auto;
+  max-height: min(72vh, 820px);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .uploaded-data-table {
@@ -820,6 +826,9 @@ h3 {
 }
 
 .uploaded-data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   color: var(--muted);
   background: var(--background);
   font-size: 0.72rem;
@@ -895,13 +904,13 @@ footer {
     min-height: 205px;
   }
 
-  .table-controls {
+  .data-filter-controls {
     align-items: stretch;
     grid-template-columns: 1fr;
   }
 
-  .table-controls label,
-  .table-controls button {
+  .data-filter-controls label,
+  .data-filter-controls button {
     max-width: none;
     width: 100%;
   }
@@ -930,6 +939,8 @@ footer {
   .site-header,
   .hero,
   .upload-panel,
+  .data-source-panel,
+  .data-filter-controls,
   .results-header .secondary-button,
   .export-panel,
   footer {
@@ -949,6 +960,12 @@ footer {
   .category-card,
   .metric-card {
     break-inside: avoid;
+  }
+
+  .category-list,
+  .uploaded-data-table-wrap {
+    max-height: none;
+    overflow: visible;
   }
 }
 
