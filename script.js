@@ -209,7 +209,7 @@ async function applyRows(rows, fileName, source) {
   resetDataFilters();
   activeSource = source;
   currentReport = buildReport(records, skippedRows, fileName, fieldVerification, 1);
-  renderReport(currentReport);
+  renderReport(currentReport, { scrollToResults: source.kind !== "amazon" });
   setDataStatus(`${records.length.toLocaleString()} product records loaded from ${fileName}. Prices are shown in USD.`, "success");
 }
 
@@ -567,12 +567,14 @@ function createCategorySummary(category) {
   return `${category.name} has ${ratingText} across ${formatNumber(category.productCount)} products and an average discount of ${discountText}. ${praiseText}, while ${complaintText}.`;
 }
 
-function renderReport(report) {
+function renderReport(report, { scrollToResults = false } = {}) {
   renderSummary(report);
   renderUploadedData(report);
 
   elements.results.hidden = false;
-  elements.results.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (scrollToResults) {
+    elements.results.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function renderSummary(report) {
