@@ -134,13 +134,22 @@
             <h3 id="export-title">Share Your Report</h3>
             <p class="section-copy">Download the shown analysis or print it as a PDF.</p>
           </div>
-          <div class="export-actions">
-            <button class="secondary-button" id="export-text" type="button">Download text</button>
-            <button class="secondary-button" id="export-csv" type="button">Download CSV</button>
-            <button class="secondary-button" id="export-xlsx" type="button">Export XLSX</button>
-            <button class="primary-button compact" id="print-report" type="button">Print Report</button>
+          <div class="export-action-stack">
+            <div class="export-actions">
+              <button class="secondary-button" id="export-text" type="button">Download Summary Text</button>
+              <button class="secondary-button" id="export-csv" type="button">Download Summary CSV</button>
+              <button class="secondary-button" id="export-xlsx" type="button">Export Summary XLSX</button>
+              <button class="primary-button compact" id="print-report" type="button">Print Summary</button>
+            </div>
+            <p class="export-note">Export summary is based on shown results.</p>
+            <div class="export-actions records-export-actions">
+              <button class="secondary-button" id="export-records-text" type="button">Download Records Text</button>
+              <button class="secondary-button" id="export-records-csv" type="button">Download Records CSV</button>
+              <button class="secondary-button" id="export-records-xlsx" type="button">Export Records XLSX</button>
+              <button class="primary-button compact" id="print-records" type="button">Print Records</button>
+            </div>
+            <p class="export-note">Raw data export is based on shown results.</p>
           </div>
-          <p class="export-note">Export data is based on shown results.</p>
         </section>
 
         <section class="uploaded-data-section" aria-labelledby="uploaded-data-title">
@@ -189,6 +198,6 @@
     </dialog>
 
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <script src="script.js?v=source-import-4"></script>
+    <script src="script.js?v=source-import-5"></script>
   </body>
 </html>

@@ -50,6 +50,10 @@ const NEGATIVE_WORDS = new Set([
 
 const GENERIC_SENTIMENT_WORDS = new Set([...POSITIVE_WORDS, ...NEGATIVE_WORDS]);
 const INR_TO_USD_RATE_URL = "https://api.frankfurter.dev/v2/rate/INR/USD";
+const RAW_EXPORT_HEADERS = [
+  "Product ID", "Product Name", "Category", "Actual Price (USD)", "Discounted Price (USD)",
+  "Discount Percentage", "Rating", "Rating Count", "Customer Review",
+];
 
 const elements = {
   loading: document.querySelector("#loading"),
@@ -73,7 +77,11 @@ const elements = {
   exportText: document.querySelector("#export-text"),
   exportCsv: document.querySelector("#export-csv"),
   exportXlsx: document.querySelector("#export-xlsx"),
+  exportRecordsText: document.querySelector("#export-records-text"),
+  exportRecordsCsv: document.querySelector("#export-records-csv"),
+  exportRecordsXlsx: document.querySelector("#export-records-xlsx"),
   printReport: document.querySelector("#print-report"),
+  printRecords: document.querySelector("#print-records"),
   uploadedDataSummary: document.querySelector("#uploaded-data-summary"),
   uploadedDataBody: document.querySelector("#uploaded-data-body"),
   uploadedDataDetails: document.querySelector(".uploaded-data-details"),
@@ -120,7 +128,11 @@ elements.loadGoogleSheet.addEventListener("click", loadGoogleSheet);
 elements.exportText.addEventListener("click", exportTextReport);
 elements.exportCsv.addEventListener("click", exportCsvReport);
 elements.exportXlsx.addEventListener("click", exportXlsxReport);
-elements.printReport.addEventListener("click", () => window.print());
+elements.exportRecordsText.addEventListener("click", exportRecordsText);
+elements.exportRecordsCsv.addEventListener("click", exportRecordsCsv);
+elements.exportRecordsXlsx.addEventListener("click", exportRecordsXlsx);
+elements.printReport.addEventListener("click", printSummary);
+elements.printRecords.addEventListener("click", printRecords);
 elements.parentCategoryFilter.addEventListener("change", handleParentCategoryChange);
 elements.childCategoryFilter.addEventListener("change", handleChildCategoryChange);
 elements.subChildCategoryFilter.addEventListener("change", renderFilteredViews);
@@ -791,7 +803,7 @@ function renderProductSummaries(records) {
 function renderCurrentTable(records = getFilteredRecords()) {
   if (!currentReport) return;
 
-  const sortedRecords = [...records].sort(compareSummaryItems);
+  const sortedRecords = getVisibleRecords(records);
 
   elements.uploadedDataBody.replaceChildren();
 
@@ -886,6 +898,10 @@ function getFilteredRecords() {
     .filter((record) => !subChildCategory || getCategoryPath(record)[2] === subChildCategory)
     .filter((record) => !searchTerm || [record.productName, record.productId]
       .some((value) => value.toLocaleLowerCase().includes(searchTerm)));
+}
+
+function getVisibleRecords(records = getFilteredRecords()) {
+  return [...records].sort(compareSummaryItems);
 }
 
 function getVisibleReport() {
@@ -1087,6 +1103,82 @@ function exportXlsxReport() {
   const worksheet = window.XLSX.utils.aoa_to_sheet([headers, ...rows]);
   window.XLSX.utils.book_append_sheet(workbook, worksheet, "Product Summary");
   window.XLSX.writeFile(workbook, "product-insights-summary.xlsx", { compression: true });
+}
+
+function exportRecordsText() {
+  if (!currentReport) return;
+  const records = getVisibleRecords();
+  const lines = [
+    "E-COMMERCE PRODUCT RECORDS",
+    `Generated: ${new Date().toLocaleString()}`,
+    `Source: ${currentReport.fileName}`,
+    `Records: ${formatNumber(records.length)}`,
+  ];
+
+  records.forEach((record, index) => {
+    lines.push("", `RECORD ${index + 1}`);
+    RAW_EXPORT_HEADERS.forEach((header, columnIndex) => {
+      lines.push(`${header}: ${getRawExportValues(record)[columnIndex]}`);
+    });
+  });
+
+  downloadFile(lines.join("\n"), "filtered-product-records.txt", "text/plain;charset=utf-8");
+}
+
+function exportRecordsCsv() {
+  if (!currentReport) return;
+  const rows = getVisibleRecords().map(getRawExportValues);
+  const csv = [RAW_EXPORT_HEADERS, ...rows].map((row) => row.map(escapeCsvValue).join(",")).join("\n");
+  downloadFile(csv, "filtered-product-records.csv", "text/csv;charset=utf-8");
+}
+
+function exportRecordsXlsx() {
+  if (!currentReport) return;
+  if (!window.XLSX) {
+    setDataStatus("XLSX export is unavailable. Check your internet connection and try again.", "error");
+    return;
+  }
+
+  const rows = getVisibleRecords().map(getRawExportValues);
+  const workbook = window.XLSX.utils.book_new();
+  const worksheet = window.XLSX.utils.aoa_to_sheet([RAW_EXPORT_HEADERS, ...rows]);
+  window.XLSX.utils.book_append_sheet(workbook, worksheet, "Filtered Records");
+  window.XLSX.writeFile(workbook, "filtered-product-records.xlsx", { compression: true });
+}
+
+function getRawExportValues(record) {
+  return [
+    record.productId,
+    record.productName,
+    record.category,
+    formatDataValue(record.actualPrice),
+    formatDataValue(record.discountedPrice),
+    record.discountPercentageRaw || "Not provided",
+    record.ratingRaw || "Not provided",
+    record.ratingCountRaw || "Not provided",
+    record.customerReview || "Not provided",
+  ];
+}
+
+function printSummary() {
+  printView("summary");
+}
+
+function printRecords() {
+  const wasOpen = elements.uploadedDataDetails.open;
+  elements.uploadedDataDetails.open = true;
+  printView("records", () => {
+    elements.uploadedDataDetails.open = wasOpen;
+  });
+}
+
+function printView(view, afterPrint = () => {}) {
+  document.body.dataset.printView = view;
+  window.addEventListener("afterprint", () => {
+    delete document.body.dataset.printView;
+    afterPrint();
+  }, { once: true });
+  window.print();
 }
 
 function getSummaryExportData(report) {
