@@ -51,7 +51,7 @@ const NEGATIVE_WORDS = new Set([
 const GENERIC_SENTIMENT_WORDS = new Set([...POSITIVE_WORDS, ...NEGATIVE_WORDS]);
 const INR_TO_USD_RATE_URL = "https://api.frankfurter.dev/v2/rate/INR/USD";
 const RAW_EXPORT_HEADERS = [
-  "Product ID", "Product Name", "Category", "Actual Price (USD)", "Discounted Price (USD)",
+  "Product ID", "Product Name", "Category", "Actual Price", "Discounted Price",
   "Discount Percentage", "Rating", "Rating Count", "Customer Review",
 ];
 
