@@ -163,11 +163,15 @@ h3 {
   box-shadow: var(--shadow);
 }
 
-.upload-panel,
-.data-source-panel {
+.upload-panel {
   max-width: 760px;
   margin: 0 auto 90px;
   padding: clamp(24px, 5vw, 42px);
+}
+
+.data-source-panel {
+  margin-bottom: 90px;
+  padding: clamp(24px, 5vw, 50px);
 }
 
 .source-import {
