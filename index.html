@@ -166,14 +166,14 @@
               <table class="uploaded-data-table" aria-label="Uploaded CSV records">
                 <thead>
                   <tr>
-                    <th scope="col">Product ID</th>
-                    <th scope="col">Product Name</th>
-                    <th scope="col">Category</th>
-                    <th scope="col">Actual Price</th>
-                    <th scope="col">Discounted Price</th>
-                    <th scope="col">Discount Percentage</th>
-                    <th scope="col">Rating</th>
-                    <th scope="col">Rating Count</th>
+                    <th scope="col"><button class="record-sort-button" type="button" data-sort-key="productId">Product ID <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col"><button class="record-sort-button" type="button" data-sort-key="productName">Product Name <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col"><button class="record-sort-button" type="button" data-sort-key="category">Category <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col"><button class="record-sort-button" type="button" data-sort-key="actualPrice">Actual Price <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col"><button class="record-sort-button" type="button" data-sort-key="discountedPrice">Discounted Price <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col"><button class="record-sort-button" type="button" data-sort-key="discountPercentage">Discount Percentage <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col"><button class="record-sort-button" type="button" data-sort-key="rating">Rating <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col"><button class="record-sort-button" type="button" data-sort-key="ratingCount">Rating Count <span aria-hidden="true">↕</span></button></th>
                     <th scope="col">Customer Review</th>
                   </tr>
                 </thead>
@@ -198,6 +198,6 @@
     </dialog>
 
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <script src="script.js?v=source-import-5"></script>
+    <script src="script.js?v=record-column-sort-1"></script>
   </body>
 </html>

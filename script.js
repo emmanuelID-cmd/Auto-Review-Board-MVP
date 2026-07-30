@@ -84,6 +84,7 @@ const elements = {
   printRecords: document.querySelector("#print-records"),
   uploadedDataSummary: document.querySelector("#uploaded-data-summary"),
   uploadedDataBody: document.querySelector("#uploaded-data-body"),
+  uploadedDataHead: document.querySelector(".uploaded-data-table thead"),
   uploadedDataDetails: document.querySelector(".uploaded-data-details"),
   reviewDialog: document.querySelector("#review-dialog"),
   reviewDialogContent: document.querySelector("#review-dialog-content"),
@@ -103,6 +104,7 @@ let tableSortCriterion = "name";
 let nextNameSortDirection = "ascending";
 let nextRatingSortDirection = "ascending";
 let activeSource = { kind: "amazon" };
+let recordColumnSort = null;
 
 elements.reloadData.addEventListener("click", loadAmazonDataset);
 elements.refreshReport.addEventListener("click", refreshActiveDataset);
@@ -139,6 +141,7 @@ elements.subChildCategoryFilter.addEventListener("change", renderFilteredViews);
 elements.productSearch.addEventListener("input", renderFilteredViews);
 elements.tableSortToggle.addEventListener("click", toggleTableSort);
 elements.ratingSortToggle.addEventListener("click", toggleRatingSort);
+elements.uploadedDataHead.addEventListener("click", handleRecordColumnSort);
 elements.uploadedDataBody.addEventListener("click", handleReviewAction);
 elements.closeReviewDialog.addEventListener("click", () => elements.reviewDialog.close());
 elements.reviewDialog.addEventListener("click", (event) => {
@@ -265,8 +268,10 @@ function resetDataFilters() {
   tableSortCriterion = "name";
   nextNameSortDirection = "ascending";
   nextRatingSortDirection = "ascending";
+  recordColumnSort = null;
   updateTableSortButton();
   updateRatingSortButton();
+  updateRecordSortButtons();
 }
 
 async function fetchUsdRate() {
@@ -901,7 +906,7 @@ function getFilteredRecords() {
 }
 
 function getVisibleRecords(records = getFilteredRecords()) {
-  return [...records].sort(compareSummaryItems);
+  return [...records].sort(compareVisibleRecords);
 }
 
 function getVisibleReport() {
@@ -926,10 +931,12 @@ function hasActiveProductFilters() {
 
 function toggleTableSort() {
   tableSortCriterion = "name";
+  recordColumnSort = null;
   tableSortDirection = nextNameSortDirection;
   nextNameSortDirection = nextNameSortDirection === "ascending" ? "descending" : "ascending";
   updateTableSortButton();
   updateRatingSortButton();
+  updateRecordSortButtons();
   renderFilteredViews();
 }
 
@@ -941,10 +948,12 @@ function updateTableSortButton() {
 
 function toggleRatingSort() {
   tableSortCriterion = "rating";
+  recordColumnSort = null;
   ratingSortDirection = nextRatingSortDirection;
   nextRatingSortDirection = nextRatingSortDirection === "ascending" ? "descending" : "ascending";
   updateRatingSortButton();
   updateTableSortButton();
+  updateRecordSortButtons();
   renderFilteredViews();
 }
 
@@ -974,6 +983,57 @@ function compareSummaryItems(first, second) {
   const secondName = second.name || second.productName || "";
   const comparison = firstName.localeCompare(secondName, undefined, { sensitivity: "base" });
   return tableSortCriterion === "name" && tableSortDirection === "descending" ? -comparison : comparison;
+}
+
+function handleRecordColumnSort(event) {
+  const button = event.target.closest(".record-sort-button");
+  if (!button) return;
+
+  const key = button.dataset.sortKey;
+  const direction = recordColumnSort?.key === key && recordColumnSort.direction === "ascending"
+    ? "descending"
+    : "ascending";
+  recordColumnSort = { key, direction };
+  updateRecordSortButtons();
+  renderCurrentTable();
+}
+
+function updateRecordSortButtons() {
+  document.querySelectorAll(".record-sort-button").forEach((button) => {
+    const isActive = recordColumnSort?.key === button.dataset.sortKey;
+    const direction = isActive ? recordColumnSort.direction : null;
+    const label = button.firstChild.textContent.trim();
+    const status = button.querySelector("span");
+    status.textContent = direction === "ascending" ? "↑" : direction === "descending" ? "↓" : "↕";
+    button.setAttribute("aria-label", `${label}: sort ${direction === "ascending" ? "descending" : "ascending"}`);
+    button.closest("th").setAttribute("aria-sort", direction || "none");
+  });
+}
+
+function compareVisibleRecords(first, second) {
+  if (!recordColumnSort) return compareSummaryItems(first, second);
+
+  const { key, direction } = recordColumnSort;
+  const numericKeys = new Set(["actualPrice", "discountedPrice", "discountPercentage", "rating", "ratingCount"]);
+  let comparison;
+
+  if (numericKeys.has(key)) {
+    const firstValue = first[key];
+    const secondValue = second[key];
+    if (!isNumber(firstValue)) return isNumber(secondValue) ? 1 : 0;
+    if (!isNumber(secondValue)) return -1;
+    comparison = firstValue - secondValue;
+  } else {
+    const values = {
+      productId: (record) => record.productId,
+      productName: (record) => record.productName,
+      category: formatProductCategory,
+    };
+    comparison = values[key](first).localeCompare(values[key](second), undefined, { sensitivity: "base" });
+  }
+
+  if (comparison !== 0) return direction === "ascending" ? comparison : -comparison;
+  return first.productName.localeCompare(second.productName, undefined, { sensitivity: "base" });
 }
 
 function formatDataValue(value) {
